@@ -1,9 +1,31 @@
 {% extends 'layout.html' %}
 {% block title %}Point Annotation{% endblock %}
 {% block content %}
+
 <div id=container>
   <img id="mainImage" class ="displayed" src="/static/images/example_fluke.jpg" alt="test" >
 </div>
+
+<div class="modal" id="TheModal">
+ <div class="modal-dialog">
+   <div class="modal-content">
+     <div class="modal-header">
+       <h4 class="modal-title">Annotation Data</h4>
+     </div>
+     <div class="modal-body" id="mainModalData">
+       <p>test</p>
+     </div>
+     <div class="modal-footer">
+       <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+     </div>
+   </div>
+ </div>
+</div>
+
+<button type='button' id="modalShow">Show Info</button>
+<button type='button' id="submitData">Submit</button>
+
 <script src="/static/js/jquery-2.1.4.min.js"></script>
+<script src="/static/js/bootstrap.min.js"></script>
 <script src="/static/js/imageClick.js"></script>
 {% endblock %}

@@ -1,39 +1,45 @@
-from flask import Flask
-from flask import render_template
+from __future__ import division, print_function
+from flask import Flask, jsonify, render_template, request
 import ibeis
 from ibeis.web.appfuncs import  return_src
 from random import shuffle
-import json
+import cv2
+import numpy as np
 
 app = Flask(__name__)
-
-ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
-gid_list = ibs.get_valid_gids()
-new_gid_list = []
-flag_list = [ len(aid_list) > 1 for aid_list in ibs.get_image_aids(gid_list) ]
-for i in range(len(gid_list)):
-    if not flag_list[i]:
-	new_gid_list.append(gid_list[i])
-
-gid_list = new_gid_list
-shuffle(gid_list)
-index = 0
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/image')
+@app.route('/image',methods=['POST'])
 def get_next_image():
-    value = json.dumps({'src':return_src(ibs.get_image_paths(gid_list[index])) , 'gid':gid_list[index] }, separators=(',',':') )
+    global index
+    gid = gid_list[index]
+    src = return_src(ibs.get_image_paths(gid))
+    img = ibs.get_images(gid)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
+    img = gradient_y_image.tolist()
     index += 1
-    return str(value)
+    return jsonify(image=src,id=gid,imgSrc=img)
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    if request.method == 'POST':
-        pass
-    return "done"
+@app.route('/path',methods=['POST'])
+def find_Path():
+    jsonData = request.get_json()
+    return "test"
 
 if __name__ == '__main__':
+    ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
+    gid_list = ibs.get_valid_gids()
+    new_gid_list = []
+    flag_list = [ len(aid_list) > 1 for aid_list in ibs.get_image_aids(gid_list) ]
+    for i in range(len(gid_list)):
+        if not flag_list[i]:
+            new_gid_list.append(gid_list[i])
+
+    gid_list = new_gid_list
+    shuffle(gid_list)
+    index = 0
+
     app.run(host='0.0.0.0')

@@ -17,6 +17,13 @@ img.displayed {
   height: 8px;
   border-style: solid;
   border-width: 1px;
-  border-color: red;
+  border-color: yellow;
+}
 
+#start.overlay{
+  border-color: orange;
+}
+
+#end.overlay{
+  border-color: red;
 }

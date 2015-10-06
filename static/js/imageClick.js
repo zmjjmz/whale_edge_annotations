@@ -3,30 +3,30 @@ function zeros(dimensions){
   for (var i = 0; i < dimensions[0]; ++i) {
         array.push(dimensions.length == 1 ? 0 : zeros(dimensions.slice(1)));
     }
-
     return array;
 }
 
-function setPassThrough(array, pt){
-  for(var i = 0; i < array.length; i++){
-    array[i][pt[0]] = Number.NEGATIVE_INFINITY;
+function setPassThrough(gradient, pt){
+  for(var i = 0; i < gradient.length; i++){
+    gradient[i][pt[0]] = Number.NEGATIVE_INFINITY;
   }
-  array[pt[1]][pt[0]] = 0;
+  gradient[pt[1]][pt[0]] = 0;
+  return gradient;
 }
 
 function getCost(row, col, i, gradient_y_image, cost){
-  if(row + i < 0 || row+1 >= array.length){
+  if(row + i < 0 || row+i >= gradient_y_image.length){
     return Number.NEGATIVE_INFINITY;
   }
   else{
-    return cost[row+i][col-1] + gradient_y_image[row,col];
+    return cost[row+i][col-1] + gradient_y_image[row][col];
   }
 }
 
 function getCandidates(row, col, gradient_y_image, cost, neighbor_range){
   var candidates = [];
-  for(i in neighbor_range){
-    candidates.push(getCost(row,col,i,gradient_y_image,cost))
+  for(var i = 0; i < neighbor_range.length; i++){
+    candidates.push(getCost(row,col,neighbor_range[i],gradient_y_image,cost))
   }
   return candidates;
 }
@@ -44,7 +44,6 @@ function argMax(candidates){
 }
 
 function find_seam(yGradient, start,end, n_neighbors){
-  alert("STARTING");
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
     return;
@@ -59,6 +58,7 @@ function find_seam(yGradient, start,end, n_neighbors){
   var cost = zeros([yGradient.length, yGradient[0].length ])
   var back = zeros([yGradient.length, yGradient[0].length ])
   //TODO check start is before end
+  
   for(var col = start[0]; col < end[0] + 1; col++){
     for(var row = 0; row < yGradient.length; row++){
       candidates = getCandidates(row, col, yGradient, cost, neighbor_range);
@@ -71,12 +71,20 @@ function find_seam(yGradient, start,end, n_neighbors){
   var curr_y = end[1];
   var path_cost = 0;
   for(var col = end[0]+1; col >= start[0]; col--){
-    path_cost += cost[curr_y,col];
-    path.append(curr_y);
-    next_ = curr_y + back[curr_y,col];
+    path_cost += cost[curr_y][col];
+    path.push([col,curr_y]);
+    next_ = curr_y + back[curr_y][col];
     curr_y = next_;
   }
-  alert("DONE");
+  for(var i = 0; i < path.length; i++){
+    var offset = $('.displayed').offset();
+    var posX = path[i][0] + offset.left;
+    posY = path[i][1] + offset.top;
+    img = $('<div class=\'overlay\' id=\'other\'>');
+    img.css('left', posX);
+    img.css('top',posY);
+    img.appendTo('#container');
+  }
   return path;
 }
 
@@ -90,13 +98,12 @@ function updateModal(data){
   }
 }
 
-function updateMainImage(){
-    $.post( "/image", function( data ) {
+function updateMainImage(){ 
+   $.post( "/image", function( data ) {
       $('#mainImage').attr("src", data.image);
       $('#mainImage').attr("alt", data.id);
-      yGradient = data.imgSrc
-      $('#mainImage').css('width',yGradient[0].length)
-      $('#mainImage').css('height', yGradient.length)
+      $('#mainImage').css('width',data.dim2)
+      $('#mainImage').css('height', data.dim1)
     });
 }
 
@@ -112,12 +119,11 @@ $(document).ready(function(e) {
 
   $('img').on('dragstart', function(event) { event.preventDefault(); });
   var Ptdata = [];
-  var yGradient = false;
   var startPoint = false;
-  var startLocaiton;
+  var startLocaiton = [];
   var endPoint = false;
-  var endLocaiton;
-  var imageData;
+  var endLocaiton = [];
+  var imageData = [];
   var path = false;
   $('.displayed').click(function(e) {
     var offset = $('.displayed').offset();
@@ -151,8 +157,14 @@ $(document).ready(function(e) {
 
   $('#submitData').click(function(e){
       if(startPoint && endPoint){
-
-        setTimeout( path = find_seam(yGradient, startLocaiton,endLocaiton, 3), 0 );
+        startLocation[0] = Math.floor(startLocation[0]);
+        startLocation[1] = Math.floor(startLocation[1]);
+        endLocation[0] = Math.floor(endLocation[0]);
+        endLocation[1] = Math.floor(endLocation[1]);
+        var gid = $('#mainImage').attr("alt");
+        $.get('/gradient/'+gid, function( data ) {
+          setTimeout(find_seam(data.gradient, startLocation,endLocation, 3), 0 );
+        }); 
 
         /*
       	var toSubmit = {'id':$('#mainImage').attr("alt"), 'points':Ptdata};
@@ -160,7 +172,7 @@ $(document).ready(function(e) {
         startPoint = false;
         endPoint = false;
       	$( ".overlay" ).remove();
-      	$.ajax({
+      	$.ajax(
 		type: 'POST',
     		contentType: 'application/json',
     		url: '/path',

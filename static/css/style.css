@@ -27,3 +27,7 @@ img.displayed {
 #end.overlay{
   border-color: red;
 }
+
+#show.overlay{
+  background-color: rgba(255,255,255,0.5);
+}

@@ -18,16 +18,23 @@ def get_next_image():
     gid = gid_list[index]
     src = return_src(ibs.get_image_paths(gid))
     img = ibs.get_images(gid)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
-    img = gradient_y_image.tolist()
     index += 1
-    return jsonify(image=src,id=gid,imgSrc=img)
+    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1])
 
 @app.route('/path',methods=['POST'])
 def find_Path():
     jsonData = request.get_json()
     return "test"
+
+@app.route('/gradient/<int:gid>',methods=['GET'])
+def getYGradient(gid):
+    img = ibs.get_images(gid)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
+    print( gradient_y_image.shape)
+    img = gradient_y_image.tolist()
+    print( len(img))
+    return jsonify(gradient=img)
 
 if __name__ == '__main__':
     ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')

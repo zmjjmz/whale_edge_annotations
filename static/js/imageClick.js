@@ -14,6 +14,8 @@ function updateMainImage(){
       $('#mainImage').attr("src", data.image);
       $('#mainImage').attr("alt", data.id);
       yGradient = data.imgSrc
+      $('#mainImage').css('width',yGradient[0].length)
+      $('#mainImage').css('height', yGradient.length)
     });
 }
 
@@ -61,7 +63,7 @@ $(document).ready(function(e) {
   });
 
   $('#modalShow').click(function(e){
-      updateModal(data);
+      updateModal(Ptdata);
       $('#TheModal').modal('show');
   });
   

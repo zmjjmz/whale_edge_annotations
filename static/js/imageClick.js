@@ -6,6 +6,13 @@ function zeros(dimensions){
     return array;
 }
 
+function floorPoint(pt){
+  point = [];
+  point.push(Math.floor(pt[0]));
+  point.push(Math.floor(pt[1]));
+  return point;
+}
+
 function setPassThrough(gradient, pt){
   for(var i = 0; i < gradient.length; i++){
     gradient[i][pt[0]] = Number.NEGATIVE_INFINITY;
@@ -43,7 +50,7 @@ function argMax(candidates){
   return maxIndex;
 }
 
-function find_seam(yGradient, start,end, n_neighbors){
+function find_seam(yGradient, start,end,extras, n_neighbors){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
     return;
@@ -54,6 +61,10 @@ function find_seam(yGradient, start,end, n_neighbors){
   }
   yGradient = setPassThrough(yGradient, start)
   yGradient = setPassThrough(yGradient, end)
+  for(var i = 0; i < extras.length; i++){
+    console.log("ACTION");
+    yGradient = setPassThrough(yGradient, extras[i]);
+  }
   //TODO be able to pick additional points
   var cost = zeros([yGradient.length, yGradient[0].length ])
   var back = zeros([yGradient.length, yGradient[0].length ])
@@ -80,7 +91,7 @@ function find_seam(yGradient, start,end, n_neighbors){
     var offset = $('.displayed').offset();
     var posX = path[i][0] + offset.left;
     posY = path[i][1] + offset.top;
-    img = $('<div class=\'overlay\' id=\'other\'>');
+    img = $('<div class=\'overlay\' id=\'show\'>');
     img.css('left', posX);
     img.css('top',posY);
     img.appendTo('#container');
@@ -118,7 +129,7 @@ $(document).ready(function(e) {
   updateMainImage();
 
   $('img').on('dragstart', function(event) { event.preventDefault(); });
-  var Ptdata = [];
+  var extras = [];
   var startPoint = false;
   var startLocaiton = [];
   var endPoint = false;
@@ -132,17 +143,17 @@ $(document).ready(function(e) {
     if(!startPoint){
         img = $('<div class=\'overlay\' id=\'start\'>');
         startPoint = true;
-        startLocation = [posX,posY];
+        startLocation = floorPoint([posX,posY]);
     }
     else if(!endPoint){
         img = $('<div class=\'overlay\' id=\'end\'>');
         endPoint = true;
-        endLocation = [posX,posY];
+        endLocation = floorPoint([posX,posY]);
     }
     else{
         img = $('<div class=\'overlay\' id=\'other\'>');
-        point = [posX,posY];
-        Ptdata.push(point);
+        point = floorPoint([posX,posY]);
+        extras.push(point);
     }
     img.css('top', e.pageY-annotationOffset);
     img.css('left',e.pageX-annotationOffset);
@@ -151,24 +162,20 @@ $(document).ready(function(e) {
   });
 
   $('#modalShow').click(function(e){
-      updateModal(Ptdata);
+      updateModal(extras);
       $('#TheModal').modal('show');
   });
 
   $('#submitData').click(function(e){
       if(startPoint && endPoint){
-        startLocation[0] = Math.floor(startLocation[0]);
-        startLocation[1] = Math.floor(startLocation[1]);
-        endLocation[0] = Math.floor(endLocation[0]);
-        endLocation[1] = Math.floor(endLocation[1]);
         var gid = $('#mainImage').attr("alt");
         $.get('/gradient/'+gid, function( data ) {
-          setTimeout(find_seam(data.gradient, startLocation,endLocation, 3), 0 );
+          setTimeout(find_seam(data.gradient, startLocation,endLocation,extras, 3), 0 );
         }); 
 
         /*
       	var toSubmit = {'id':$('#mainImage').attr("alt"), 'points':Ptdata};
-      	Ptdata = [];
+      	extras = [];
         startPoint = false;
         endPoint = false;
       	$( ".overlay" ).remove();

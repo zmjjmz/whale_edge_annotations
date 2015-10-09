@@ -2,28 +2,47 @@
 {% block title %}Point Annotation{% endblock %}
 {% block content %}
 
+<form class="form-horizontal">
+  <fieldset>
+    <legend>Options</legend>
+    <div class="form-group">
+      <label for="neighbors" class="col-lg-2 control-label">n_neighbors</label>
+      <div class="col-lg-10">
+        <input class="form-control" id="inputNeighbors" placeholder="3" type="text">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-lg-2 control-label">Radios</label>
+      <div class="col-lg-10">
+        <div class="radio">
+          <label>
+            <input name="optionsRadios" id="optionsRadios1" value="option1" checked="" type="radio">
+            Seam Carving
+          </label>
+        </div>
+        <div class="radio">
+          <label>
+            <input name="optionsRadios" id="optionsRadios2" value="option2" type="radio">
+            Manual
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-lg-10 col-lg-offset-2">
+        <button type="reset" id="resetState" class="btn btn-default">Reset</button>
+        <button type="submit" id="submitData" class="btn btn-primary">Make Path</button>
+      </div>
+    </div>
+  </fieldset>
+</form>
+
+
 <div id=container>
   <img id="mainImage" class ="displayed" src="" alt="" >
 </div>
 
-<div class="modal" id="TheModal">
- <div class="modal-dialog">
-   <div class="modal-content">
-     <div class="modal-header">
-       <h4 class="modal-title">Annotation Data</h4>
-     </div>
-     <div class="modal-body" id="mainModalData">
-       <p>test</p>
-     </div>
-     <div class="modal-footer">
-       <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-     </div>
-   </div>
- </div>
-</div>
 
-<button type='button' id="modalShow">Show Info</button>
-<button type='button' id="submitData">Submit</button>
 
 <script src="/static/js/jquery-2.1.4.min.js"></script>
 <script src="/static/js/bootstrap.min.js"></script>

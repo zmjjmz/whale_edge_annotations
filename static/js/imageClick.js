@@ -1,3 +1,7 @@
+/**
+*dimesnsions is an array with the dimesnsions
+*returns matrix of zeros with given dimensions
+*/
 function zeros(dimensions){
   var array = [];
   for (var i = 0; i < dimensions[0]; ++i) {
@@ -6,11 +10,28 @@ function zeros(dimensions){
     return array;
 }
 
+/**
+* Takes an array of a point [x,y]
+* returns an array with the point values turn to ints
+*/
 function floorPoint(pt){
   point = [];
   point.push(Math.floor(pt[0]));
   point.push(Math.floor(pt[1]));
   return point;
+}
+
+/**
+Takes in array of x,y points and returns array of path connecting all points.
+*/
+function getLinearPath(points){
+  path = [];
+  for(var i = 1; i < len(points); i++){
+    var slope = (points[i][1] - points[i-1][1])/(points[i][0] - points[i-1][0]);
+    //TODO find b then map paths between points
+    //TODO handle undefined slope
+  }
+  return path;
 }
 
 function setPassThrough(gradient, pt){
@@ -62,14 +83,13 @@ function find_seam(yGradient, start,end,extras, n_neighbors){
   yGradient = setPassThrough(yGradient, start)
   yGradient = setPassThrough(yGradient, end)
   for(var i = 0; i < extras.length; i++){
-    console.log("ACTION");
     yGradient = setPassThrough(yGradient, extras[i]);
   }
   //TODO be able to pick additional points
   var cost = zeros([yGradient.length, yGradient[0].length ])
   var back = zeros([yGradient.length, yGradient[0].length ])
   //TODO check start is before end
-  
+
   for(var col = start[0]; col < end[0] + 1; col++){
     for(var row = 0; row < yGradient.length; row++){
       candidates = getCandidates(row, col, yGradient, cost, neighbor_range);
@@ -99,17 +119,7 @@ function find_seam(yGradient, start,end,extras, n_neighbors){
   return path;
 }
 
-function updateModal(data){
-  var modalData = $('#mainModalData');
-  modalData.empty();
-  for(var i = 0; i < data.length; i++){
-    var point = $('<p>');
-    point.text(data[i]);
-    modalData.append(point);
-  }
-}
-
-function updateMainImage(){ 
+function updateMainImage(){
    $.post( "/image", function( data ) {
       $('#mainImage').attr("src", data.image);
       $('#mainImage').attr("alt", data.id);
@@ -161,17 +171,12 @@ $(document).ready(function(e) {
 
   });
 
-  $('#modalShow').click(function(e){
-      updateModal(extras);
-      $('#TheModal').modal('show');
-  });
-
   $('#submitData').click(function(e){
       if(startPoint && endPoint){
         var gid = $('#mainImage').attr("alt");
         $.get('/gradient/'+gid, function( data ) {
           setTimeout(find_seam(data.gradient, startLocation,endLocation,extras, 3), 0 );
-        }); 
+        });
 
         /*
       	var toSubmit = {'id':$('#mainImage').attr("alt"), 'points':Ptdata};

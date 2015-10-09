@@ -172,6 +172,7 @@ $(document).ready(function(e) {
   });
 
   $('#submitData').click(function(e){
+      e.preventDefault();
       if(startPoint && endPoint){
         var gid = $('#mainImage').attr("alt");
         $.get('/gradient/'+gid, function( data ) {

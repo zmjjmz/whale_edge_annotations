@@ -21,15 +21,31 @@ function floorPoint(pt){
   return point;
 }
 
+function displayPath(path){
+  for(var i = 0; i < path.length; i++){
+    var offset = $('.displayed').offset();
+    var posX = path[i][0] + offset.left;
+    posY = path[i][1] + offset.top;
+    img = $('<div class=\'overlay\' id=\'show\'>');
+    img.css('left', posX);
+    img.css('top',posY);
+    img.appendTo('#container');
+  }
+}
+
 /**
 Takes in array of x,y points and returns array of path connecting all points.
 */
 function getLinearPath(points){
   path = [];
-  for(var i = 1; i < len(points); i++){
+  path.push(points[0]);
+  for(var i = 1; i < points.length; i++){
     var slope = (points[i][1] - points[i-1][1])/(points[i][0] - points[i-1][0]);
-    //TODO find b then map paths between points
-    //TODO handle undefined slope
+    var b = points[i][1] - slope * points[i][0];
+    for(var j = points[i-1][0]; j < points[i][0]; j++){
+      path.push(floorPoint([j , b + slope*j]));
+    }
+    path.push(points[i]);
   }
   return path;
 }
@@ -71,7 +87,7 @@ function argMax(candidates){
   return maxIndex;
 }
 
-function find_seam(yGradient, start,end,extras, n_neighbors){
+function find_seam(yGradient, start,end,center, n_neighbors){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
     return;
@@ -82,10 +98,9 @@ function find_seam(yGradient, start,end,extras, n_neighbors){
   }
   yGradient = setPassThrough(yGradient, start)
   yGradient = setPassThrough(yGradient, end)
-  for(var i = 0; i < extras.length; i++){
-    yGradient = setPassThrough(yGradient, extras[i]);
+  if(center != false){
+    yGradient = setPassThrough(yGradient, center);
   }
-  //TODO be able to pick additional points
   var cost = zeros([yGradient.length, yGradient[0].length ])
   var back = zeros([yGradient.length, yGradient[0].length ])
   //TODO check start is before end
@@ -107,15 +122,7 @@ function find_seam(yGradient, start,end,extras, n_neighbors){
     next_ = curr_y + back[curr_y][col];
     curr_y = next_;
   }
-  for(var i = 0; i < path.length; i++){
-    var offset = $('.displayed').offset();
-    var posX = path[i][0] + offset.left;
-    posY = path[i][1] + offset.top;
-    img = $('<div class=\'overlay\' id=\'show\'>');
-    img.css('left', posX);
-    img.css('top',posY);
-    img.appendTo('#container');
-  }
+  displayPath(path);
   return path;
 }
 
@@ -128,78 +135,124 @@ function updateMainImage(){
     });
 }
 
+function reset(type){
+  if(type == "seam"){
+     centerPoint = false;
+     center = false;
+     startPoint = false;
+     startLocaiton = [];
+     endPoint = false;
+     endLocaiton = [];
+     imageData = [];
+     $('#start').remove();
+     $('#end').remove();
+     $('#center').remove();
+  }
+  else{
+     linePoints = [];
+     $('#other').remove();
+  }
+  $('#show').remove();
+}
+
 
 $(document).ready(function(e) {
-
+  var SEAM = "seam";
+  var MANUAL = "manual";
+  var type = SEAM;
   //Set the size of container to size of image
   var overlay = $("<div class=overlay><div>").hide().appendTo("body");
   var annotationOffset = overlay.width()/2;
   overlay.remove();
   //Load first image for user
   updateMainImage();
-
+  
   $('img').on('dragstart', function(event) { event.preventDefault(); });
-  var extras = [];
+
+  $('#optionsRadios1').click(function(e) {
+	type = SEAM;
+  });
+
+  $('#optionsRadios2').click(function(e) {
+	type = MANUAL;
+  });
+  //Variables for seam
+  var centerPoint = false;
+  var center = false;
   var startPoint = false;
   var startLocaiton = [];
   var endPoint = false;
   var endLocaiton = [];
   var imageData = [];
-  var path = false;
+  
+  //Variabels for manual path
+  var linePoints = [];
+  
+
+  $('#resetState').click(function(e) {
+    e.preventDefault();
+    reset(type);
+  });
+
   $('.displayed').click(function(e) {
     var offset = $('.displayed').offset();
     var posX = e.pageX - offset.left,posY = e.pageY - offset.top;
     var img;
-    if(!startPoint){
-        img = $('<div class=\'overlay\' id=\'start\'>');
-        startPoint = true;
-        startLocation = floorPoint([posX,posY]);
+    var add = true;
+    if(type == SEAM){
+       if(!startPoint){
+          img = $('<div class=\'overlay\' id=\'start\'>');
+          startPoint = true;
+          startLocation = floorPoint([posX,posY]);
+       }
+       else if(!endPoint){
+          img = $('<div class=\'overlay\' id=\'end\'>');
+          endPoint = true;
+          endLocation = floorPoint([posX,posY]);
+       }
+       else if(!centerPoint){
+          img = $('<div class=\'overlay\' id=\'center\'>');
+          center = floorPoint([posX,posY]);
+          centerPoint = true;
+       }
+       else{
+	  add = false;
+	  alert("Left, Right and Center are all labeled"); 
+       }
     }
-    else if(!endPoint){
-        img = $('<div class=\'overlay\' id=\'end\'>');
-        endPoint = true;
-        endLocation = floorPoint([posX,posY]);
+    else{//Manual
+     img = $('<div class=\'overlay\' id=\'other\'>');
+     linePoints.push(floorPoint([posX,posY]));
     }
-    else{
-        img = $('<div class=\'overlay\' id=\'other\'>');
-        point = floorPoint([posX,posY]);
-        extras.push(point);
+    if(add){
+        img.css('top', e.pageY-annotationOffset);
+    	img.css('left',e.pageX-annotationOffset);
+    	img.appendTo('#container');
     }
-    img.css('top', e.pageY-annotationOffset);
-    img.css('left',e.pageX-annotationOffset);
-    img.appendTo('#container');
 
   });
 
   $('#submitData').click(function(e){
       e.preventDefault();
-      if(startPoint && endPoint){
-        var gid = $('#mainImage').attr("alt");
-        $.get('/gradient/'+gid, function( data ) {
-          setTimeout(find_seam(data.gradient, startLocation,endLocation,extras, 3), 0 );
-        });
-
-        /*
-      	var toSubmit = {'id':$('#mainImage').attr("alt"), 'points':Ptdata};
-      	extras = [];
-        startPoint = false;
-        endPoint = false;
-      	$( ".overlay" ).remove();
-      	$.ajax(
-		type: 'POST',
-    		contentType: 'application/json',
-    		url: '/path',
-    		dataType : 'json',
-    		data : JSON.stringify(toSubmit),
-    		complete : function(result) {
-
-              }
-        });
-        */
+      if(type == SEAM){
+        if(startPoint && endPoint){
+          var gid = $('#mainImage').attr("alt");
+          $.get('/gradient/'+gid, function( data ) {
+	    var n_neighbors = $('#inputNeighbors').val();
+	    if(n_neighbors == ''){
+	      n_neighbors = $('#inputNeighbors').attr('placeholder');
+	    }
+	    n_neighbors = parseInt(n_neighbors);
+            setTimeout(find_seam(data.gradient, startLocation,endLocation,center, n_neighbors), 0 );
+          });
+        }
+        else{
+        	alert("Please Label start and end points before submitting");
+        }
       }
-      else{
-      	alert("Please Label start and end points before submitting");
-      }
+      else{//MANUAL
+	displayPath(getLinearPath(linePoints))
+      }  
   });
 
 });

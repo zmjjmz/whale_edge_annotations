@@ -28,9 +28,12 @@ img.displayed {
   border-color: red;
 }
 
+#center.overlay{
+  border-color: blue;
+}
+
 #show.overlay{
-  background-color: rgba(255,255,255,0.5);
   width: 1px;
   height: 1px;
-  border-color: white;
+  border-color: rgba(255,192,203,0.5);
 }

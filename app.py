@@ -40,29 +40,61 @@ def index():
 def get_next_image():
     global index
     global images
+    if len(gid_list) == 0:
+	return jsonify(finallyDone=True)
     while images[gid_list[index]][1]:
 	index += 1
+	if index == len(gid_list):
+	    index = 0
     gid = gid_list[index]
+    fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
+    with open(fileName) as data_file:
+    	jsonData = json.load(data_file)
     src = return_src(ibs.get_image_paths(gid))
     img = ibs.get_images(gid)
     images[gid_list[index]][1] = True
     index += 1
-    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1])
+    if index == len(gid_list):
+	index == 0
+    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData)
 
 @app.route('/path',methods=['POST'])
-def find_Path():
+def storePath():
+    global images
+    global gid_list
     jsonData = request.get_json()
-    print( jsonData)
-    return "test"
+    gid = int(jsonData['gid'])
+    images[gid] = False
+    if jsonData['done']:
+	print('done')
+	images.pop(gid,None)
+	gid_list.remove(gid)
+    with open("changes.log",'a') as log:
+        log.write("Image Marked as Done: " + ibs.get_image_gnames(gid)+'\n')
+    fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
+    
+    values = json.dumps([ibs.get_image_gnames(gid),jsonData])
+    
+    tmp = open(fileName, 'w')
+    tmp.write(values)
+    tmp.close
+    
+    return "Submitted"
+
+@app.route('/checkout',methods=['POST'])
+def checkout():
+    global images
+    jsonData = request.get_json()
+    gid = int(jsonData['gid'])
+    images[gid] = False
+    return "Checked out"
 
 @app.route('/gradient/<int:gid>',methods=['GET'])
 def getYGradient(gid):
     img = ibs.get_images(gid)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
-    print( gradient_y_image.shape)
     img = gradient_y_image.tolist()
-    print( len(img))
     return jsonify(gradient=img)
 
 if __name__ == '__main__':
@@ -82,5 +114,6 @@ if __name__ == '__main__':
                     images[gid] = [item,False]
     gid_list = images.keys()
     index = 0
+    
     
     app.run(host='0.0.0.0')

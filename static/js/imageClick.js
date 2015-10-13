@@ -10,6 +10,20 @@ function zeros(dimensions){
     return array;
 }
 
+function sendPath(path,type,start,end,linePoints, n_neighbors,done){
+  var arr = { Path: path, Type: type,Start:start,End:end,LinePoints:linePoints,Neighbors:n_neighbors,Done:done };
+  $.ajax({
+    url: '/path',
+    type: 'POST',
+    data: JSON.stringify(arr),
+    contentType: 'application/json; charset=utf-8',
+    dataType: 'json',
+    async: true,
+    success: function(msg) {
+    }
+  });
+}
+
 /**
 * Takes an array of a point [x,y]
 * returns an array with the point values turn to ints
@@ -21,15 +35,20 @@ function floorPoint(pt){
   return point;
 }
 
-function displayPath(path){
+function displayPath(path,type){
   for(var i = 0; i < path.length; i++){
     var offset = $('.displayed').offset();
     var posX = path[i][0] + offset.left;
     posY = path[i][1] + offset.top;
-    img = $('<div class=\'overlay\' id=\'show\'>');
+    if(type == 'seam'){
+      img = $('<div class=\'seamPath\' >');
+    }
+    else{
+       img = $('<div class=\'manualPath\' >');
+    }
     img.css('left', posX);
     img.css('top',posY);
-    img.appendTo('#container');
+    img.appendTo('#container');  
   }
 }
 
@@ -38,6 +57,7 @@ Takes in array of x,y points and returns array of path connecting all points.
 */
 function getLinearPath(points){
   path = [];
+  points  = points.sort(function(a,b){return a[0] - b[0]});
   path.push(points[0]);
   for(var i = 1; i < points.length; i++){
     var slope = (points[i][1] - points[i-1][1])/(points[i][0] - points[i-1][0]);
@@ -87,7 +107,7 @@ function argMax(candidates){
   return maxIndex;
 }
 
-function find_seam(yGradient, start,end,center, n_neighbors){
+function find_seam(yGradient, start,end,center, n_neighbors,linePoints){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
     return;
@@ -122,8 +142,14 @@ function find_seam(yGradient, start,end,center, n_neighbors){
     next_ = curr_y + back[curr_y][col];
     curr_y = next_;
   }
-  displayPath(path);
-  return path;
+  displayPath(path,'seam');
+  path = JSON.stringify(path);
+  //Removing previous data
+  $('#pathInfo').remove();
+  info = $('<div id=\'pathInfo\'>');
+  info.hide();
+  info.text(path);
+  info.appendTo('body');
 }
 
 function updateMainImage(){
@@ -134,27 +160,6 @@ function updateMainImage(){
       $('#mainImage').css('height', data.dim1)
     });
 }
-
-function reset(type){
-  if(type == "seam"){
-     centerPoint = false;
-     center = false;
-     startPoint = false;
-     startLocaiton = [];
-     endPoint = false;
-     endLocaiton = [];
-     imageData = [];
-     $('#start').remove();
-     $('#end').remove();
-     $('#center').remove();
-  }
-  else{
-     linePoints = [];
-     $('#other').remove();
-  }
-  $('#show').remove();
-}
-
 
 $(document).ready(function(e) {
   var SEAM = "seam";
@@ -171,10 +176,14 @@ $(document).ready(function(e) {
 
   $('#optionsRadios1').click(function(e) {
 	type = SEAM;
+        $('.manualPath').hide();
+	$('.seamPath').show();
   });
 
   $('#optionsRadios2').click(function(e) {
 	type = MANUAL;
+        $('.seamPath').hide();
+	$('.manualPath').show();
   });
   //Variables for seam
   var centerPoint = false;
@@ -184,14 +193,27 @@ $(document).ready(function(e) {
   var endPoint = false;
   var endLocaiton = [];
   var imageData = [];
+  var seamPath = [];
   
   //Variabels for manual path
   var linePoints = [];
-  
+  var linePath = [];  
 
   $('#resetState').click(function(e) {
-    e.preventDefault();
-    reset(type);
+   e.preventDefault();
+   centerPoint = false;
+   center = false;
+   startPoint = false;
+   startLocaiton = [];
+   endPoint = false;
+   endLocaiton = [];
+   imageData = [];
+   linePoints = [];
+   linePath = [];
+   $('.overlay').remove();
+   $('.seamPath').remove();
+   $('.manualPath').remove();
+
   });
 
   $('.displayed').click(function(e) {
@@ -204,16 +226,19 @@ $(document).ready(function(e) {
           img = $('<div class=\'overlay\' id=\'start\'>');
           startPoint = true;
           startLocation = floorPoint([posX,posY]);
+          linePoints.push(startLocation);
        }
        else if(!endPoint){
           img = $('<div class=\'overlay\' id=\'end\'>');
           endPoint = true;
           endLocation = floorPoint([posX,posY]);
+          linePoints.push(endLocation);
        }
        else if(!centerPoint){
           img = $('<div class=\'overlay\' id=\'center\'>');
           center = floorPoint([posX,posY]);
           centerPoint = true;
+	  linePoints.push(center);
        }
        else{
 	  add = false;
@@ -243,7 +268,7 @@ $(document).ready(function(e) {
 	      n_neighbors = $('#inputNeighbors').attr('placeholder');
 	    }
 	    n_neighbors = parseInt(n_neighbors);
-            setTimeout(find_seam(data.gradient, startLocation,endLocation,center, n_neighbors), 0 );
+            setTimeout(find_seam(data.gradient, startLocation,endLocation,center, n_neighbors,linePoints), 0 );
           });
         }
         else{
@@ -251,8 +276,62 @@ $(document).ready(function(e) {
         }
       }
       else{//MANUAL
-	displayPath(getLinearPath(linePoints))
+        linePath = getLinearPath(linePoints)
+	displayPath(linePath,'manual')
       }  
+  });
+  
+  $('#manualSubmit').click(function(e){
+	e.preventDefault();
+        var updated = false;
+	if(type == SEAM){
+ 	  if($('#pathInfo').length == 0) {
+		alert('Please Generate the Path First');
+	  }
+	  else{
+		path = JSON.parse($('#pathInfo').text());
+                var n_neighbors = $('#inputNeighbors').val();
+                if(n_neighbors == ''){
+                  n_neighbors = $('#inputNeighbors').attr('placeholder');
+                }
+                n_neighbors = parseInt(n_neighbors);
+                var done = confirm("Mark as Done?");
+                sendPath(path,'seam',startLocation,endLocation,linePoints, n_neighbors,done);
+                updated = true;
+	  }	   
+	}
+	else{
+	    	if(linePath.length == 0){
+		  alert('Please Generate the Path First');
+		}
+		else{
+		  var n_neighbors = $('#inputNeighbors').val();
+                  if(n_neighbors == ''){
+                    n_neighbors = $('#inputNeighbors').attr('placeholder');
+                  }
+                  n_neighbors = parseInt(n_neighbors);
+                  path = linePath;
+                  var done = confirm("Mark as Done?");
+                  sendPath(path,'manual',startLocation,endLocation,linePoints, n_neighbors,done);
+                  updated = true;
+		}
+	}
+        if(updated){
+	   centerPoint = false;
+	   center = false;
+	   startPoint = false;
+	   startLocaiton = [];
+	   endPoint = false;
+	   endLocaiton = [];
+	   imageData = [];
+	   linePoints = [];
+	   linePath = [];
+	   $('.overlay').remove();
+	   $('.seamPath').remove();
+	   $('.manualPath').remove();
+	   $('#pathInfo').remove();
+           updateMainImage();
+	}
   });
 
 });

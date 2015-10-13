@@ -32,8 +32,20 @@ img.displayed {
   border-color: blue;
 }
 
-#show.overlay{
+.seamPath{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
   width: 1px;
   height: 1px;
-  border-color: rgba(255,192,203,0.5);
+  border-color: rgba(255,0,0,0.5);
+}
+
+.manualPath{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  width: 1px;
+  height: 1px;
+  border-color: rgba(0,255,255,0.5)
 }

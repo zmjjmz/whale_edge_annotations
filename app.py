@@ -28,7 +28,7 @@ def initialInit(ibs,gid_list):
             tmp = open(fileName, 'w')
 	    tmp.write(values)
             tmp.close
-			
+
 
 app = Flask(__name__)
 
@@ -72,13 +72,13 @@ def storePath():
     with open("changes.log",'a') as log:
         log.write("Image Marked as Done: " + ibs.get_image_gnames(gid)+'\n')
     fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
-    
+
     values = json.dumps([ibs.get_image_gnames(gid),jsonData])
-    
+
     tmp = open(fileName, 'w')
     tmp.write(values)
     tmp.close
-    
+
     return "Submitted"
 
 @app.route('/checkout',methods=['POST'])
@@ -108,12 +108,16 @@ if __name__ == '__main__':
         name = ibs.get_image_gnames(gid)[:ibs.get_image_gnames(gid).index('.')]
         for item in files:
 	    if(item[item.index('/')+1:item.index('.')] == name):
-		with open(item) as data_file:    
-                    data = json.load(data_file)
-		if not data[1]['done']:
-                    images[gid] = [item,False]
+		with open(item) as data_file:
+                data = json.load(data_file)
+        badImage = False
+        for keys in data[1]:
+                if 'bad' in keys:
+                        badImage = data[1]['bad']
+		if not data[1]['done'] and not badImage:
+                images[gid] = [item,False]
     gid_list = images.keys()
     index = 0
-    
-    
+
+
     app.run(host='0.0.0.0')

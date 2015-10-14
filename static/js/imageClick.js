@@ -10,6 +10,20 @@ function zeros(dimensions){
   return array;
 }
 
+function getMaxAngle(points){
+  points  = points.sort(function(a,b){return a[0] - b[0]});
+  var maxAngle = 0;
+  for(var i = 1; i < points.length; i++){
+    diffY = points[i][1] - points[i-1][1];
+    diffX =  points[i][0] - points[i-1][0];
+    angle = Math.atan2(diffY,diffX)
+    if(maxAngle < Math.abs(angle)){
+	maxAngle = Math.abs(angle);
+    }
+  }
+  return maxAngle;
+}
+
 function sendPath(path,type,start,end,linePoints, n_neighbors,done){
   var arr = { gid:$('#mainImage').attr("alt"),path: path, type: type,left:start,right:end,linePoints:linePoints,neighbors:n_neighbors,done:done, bad:false };
   $.ajax({
@@ -34,9 +48,9 @@ function floorPoint(pt){
 }
 
 function displayIdPoint(point,id){
-  var img == null;
+  var img = null;
   if(id == null){
-    img = $('<div class=\'overlay\'');
+    img = $('<div class=\'overlay\'>');
   }
   else{
     img = $('<div class=\'overlay\' id='+id+'>');
@@ -51,7 +65,7 @@ function displayIdPoint(point,id){
 
 
 function displayPath(path,type){
-  $('.'+type'Path').remove();
+  $('.'+type+'Path').remove();
   for(var i = 0; i < path.length; i++){
     var offset = $('.displayed').offset();
     var posX = path[i][0] + offset.left;
@@ -78,7 +92,7 @@ function getLinearPath(points){
   for(var i = 1; i < points.length; i++){
     var slope = (points[i][1] - points[i-1][1])/(points[i][0] - points[i-1][0]);
     var b = points[i][1] - slope * points[i][0];
-      for(var j = points[i-1][0]; j < points[i][0]; j++){
+      for(var j = points[i-1][0]+1; j < points[i][0]; j++){
         path.push(floorPoint([j , b + slope*j]));
       }
       path.push(points[i]);
@@ -132,14 +146,11 @@ function find_seam(yGradient, start,end,linePoints, n_neighbors){
   for(var i = -1 * Math.floor(n_neighbors/2); i < 1 + Math.floor(n_neighbors/2); i++){
     neighbor_range.push(i);
   }
-  yGradient = setPassThrough(yGradient, start)
-  yGradient = setPassThrough(yGradient, end)
-  for(var i = 1; i < linePoints.legth - 2; i++)
+  for(var i = 0; i < linePoints.length; i++){
     yGradient = setPassThrough(yGradient, linePoints[i]);
   }
   var cost = zeros([yGradient.length, yGradient[0].length ])
   var back = zeros([yGradient.length, yGradient[0].length ])
-  //TODO check start is before end
 
   for(var col = start[0]; col < end[0] + 1; col++){
     for(var row = 0; row < yGradient.length; row++){
@@ -194,14 +205,18 @@ function initailizeData(data){
       points.push(data.notch);
     }
   }
+  if(data.hasOwnProperty('neighbors')){
+    $('#inputNeighbors').val(data.neighbors);
+  }
   $('#initInfo').remove();
   info = $('<div id=\'initInfo\'>');
   info.hide();
-  info.text(path);
+  info.text(JSON.stringify(points));
   info.appendTo('body');
 }
 
 function updateMainImage(){
+  $('.overlay').remove();
   $.post( "/image", function( data ) {
     if(data.FinallyDone){
       $('#container').append('<h1>No More Images Open</h1>');
@@ -233,9 +248,15 @@ $(document).ready(function(e) {
   overlay.remove();
   //Load first image for user
   updateMainImage();
+  var linePoints = [];
+  var linePath = [];
+  
 
   $('img').on('dragstart', function(event) { event.preventDefault(); });
-
+  $('#removePath').click(function(e){
+    e.preventDefault();
+    $('.'+type+'Path').remove();
+  });
   $('#optionsRadios1').click(function(e) {
     type = SEAM;
     $('.manualPath').hide();
@@ -247,9 +268,6 @@ $(document).ready(function(e) {
     $('.seamPath').hide();
     $('.manualPath').show();
   });
-
-  var linePoints = [];
-  var linePath = [];
 
   $('#resetState').click(function(e) {
     e.preventDefault();
@@ -303,9 +321,16 @@ $(document).ready(function(e) {
     if(type == SEAM){
       if(linePoints.length >= 2){
         linePoints  = linePoints.sort(function(a,b){return a[0] - b[0]});
+        var maxAngle = getMaxAngle(linePoints);
+        var n_neighbors = getNumberOfNeighbors();
+        var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
+        console.log(neighborAngle);
+        if(maxAngle > neighborAngle){
+	  alert("Slope of Plotted points exceeds neighbor range!");
+	  return;
+	}
         var gid = $('#mainImage').attr("alt");
         $.get('/gradient/'+gid, function( data ) {
-          var n_neighbors = getNumberOfNeighbors();
           setTimeout(find_seam(data.gradient, linePoints[0],linePoints[linePoints.length-1],linePoints, n_neighbors), 0 );
         });
       }
@@ -329,7 +354,6 @@ $(document).ready(function(e) {
   $('#makePath').click(function(e){
     e.preventDefault();
     generatePath();
-    console.log(linePath);
   });
 
   $('#checkout').click(function(e){
@@ -346,6 +370,9 @@ $(document).ready(function(e) {
         async: true
       });
       $('#mainImage').remove();
+      $('.overlay').remove();
+      $('.seamPath').remove();
+      $('.manualPath').remove();
       $('#container').append('<h2>Checked out</h2>');
     }
   });
@@ -411,6 +438,7 @@ $(document).ready(function(e) {
       $('.manualPath').remove();
       $('#pathInfo').remove();
       $('#markDone').attr('checked', false);
+      $('#markBad').attr('checked',false);
       $('#inputNeighbors').val($('#inputNeighbors').attr('placeholder'));
       updateMainImage();
     }

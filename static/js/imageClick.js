@@ -47,13 +47,13 @@ function floorPoint(pt){
   return point;
 }
 
-function displayIdPoint(point,id){
+function displayIdPoint(point,id, id2){
   var img = null;
   if(id == null){
-    img = $('<div class=\'overlay\'>');
+    img = $('<div class=overlay id2='+id2.toString()+'>');
   }
   else{
-    img = $('<div class=\'overlay\' id='+id+'>');
+    img = $('<div class=overlay id='+id+' id2='+id2.toString()+'>');
   }
   var offset = $('.displayed').offset();
   var posX = point[0] + offset.left;
@@ -71,10 +71,10 @@ function displayPath(path,type){
     var posX = path[i][0] + offset.left;
     posY = path[i][1] + offset.top;
     if(type == 'seam'){
-      img = $('<div class=\'seamPath\' >');
+      img = $('<div class=seamPath >');
     }
     else{
-      img = $('<div class=\'manualPath\' >');
+      img = $('<div class=manualPath >');
     }
     img.css('left', posX);
     img.css('top',posY);
@@ -179,29 +179,53 @@ function find_seam(yGradient, start,end,linePoints, n_neighbors){
   info.appendTo('body');
 }
 
+function getGradient(gid){
+  $.get('/gradient/'+gid, function( data ) {
+    $('#gradientInfo').remove();
+    info = $('<div id=gradientInfo>');
+    info.hide();
+    info.text(JSON.stringify(data.gradient));
+    info.appendTo('body');   
+  });	
+}
+
 function initailizeData(data){
   data = data.data[1];
+  var counter = 0;
+  var id2List = [];
   points = [];
   if(data.hasOwnProperty('linePoints')){
     points = data.linePoints;
     points  = points.sort(function(a,b){return a[0] - b[0]});
-    displayIdPoint(points[0],'start');
-    displayIdPoint(points[points.length - 1],'end');
+    displayIdPoint(points[0],'start',counter);
+    id2List.push(counter);
+    counter += 1;
+    displayIdPoint(points[points.length - 1],'end',counter);
+    id2List.push(counter);
+    counter += 1;
     for(var i = 1; i < points.length-2; i++){
-      displayIdPoint(points[i],null);
+      displayIdPoint(points[i],null, counter);
+      id2List.push(counter);
+      counter += 1;
     }
   }
   else{
     if(data.hasOwnProperty('left')){
-      displayIdPoint(data.left,'start');
+      displayIdPoint(data.left,'start',counter);
+      id2List.push(counter);
+      counter += 1;
       points.push(data.left);
     }
     if(data.hasOwnProperty('right')){
-      displayIdPoint(data.right,'end');
+      displayIdPoint(data.right,'end',counter);
+      id2List.push(counter);
+      counter += 1;
       points.push(data.right);
     }
     if(data.hasOwnProperty('notch')){
-      displayIdPoint(data.notch,null);
+      displayIdPoint(data.notch,null,counter);
+      id2List.push(counter);
+      counter += 1;
       points.push(data.notch);
     }
   }
@@ -209,19 +233,26 @@ function initailizeData(data){
     $('#inputNeighbors').val(data.neighbors);
   }
   $('#initInfo').remove();
-  info = $('<div id=\'initInfo\'>');
+  info = $('<div id=initInfo>');
   info.hide();
   info.text(JSON.stringify(points));
   info.appendTo('body');
+  idList = $('<div id=idList>');
+  idList.hide();
+  idList.text(JSON.stringify(id2List));
+  idList.appendTo('body');
 }
 
 function updateMainImage(){
   $('.overlay').remove();
   $.post( "/image", function( data ) {
+    $('#mileMarker').remove();
+    $('body').append('<h4 id=mileMarker>'+(data.totalImages - data.imagesLeft) + ' Images of ' + data.totalImages + ' completed');
     if(data.FinallyDone){
       $('#container').append('<h1>No More Images Open</h1>');
       return;
     }
+    getGradient(data.id);
     $('#mainImage').attr("src", data.image);
     $('#mainImage').attr("alt", data.id);
     $('#mainImage').css('width',data.dim2);
@@ -238,6 +269,30 @@ function getNumberOfNeighbors(){
   return parseInt(n_neighbors);
 }
 
+function findNewStart(idList){
+  var id = 0
+  var x = $("[id2="+idList[0]+"]").position().left;
+  for(var i = 1; i < idList.length; i++){
+    if($("[id2="+idList[i]+"]").position().left < x){
+	x = $("[id2="+idList[i]+"]").position().left;
+	id = i;
+    }
+  }
+  $("[id2="+idList[id]+"]").attr('id','start');
+}
+
+function findNewEnd(idList){
+  var id = 0
+  var x = $("[id2="+idList[0]+"]").position().left;
+  for(var i = 1; i < idList.length; i++){
+    if($("[id2="+idList[i]+"]").position().left > x){
+	x = $("[id2="+idList[i]+"]").position().left;
+	id = i;
+    }
+  }
+  $("[id2="+idList[id]+"]").attr('id','end');
+}
+
 $(document).ready(function(e) {
   var SEAM = "seam";
   var MANUAL = "manual";
@@ -250,7 +305,8 @@ $(document).ready(function(e) {
   updateMainImage();
   var linePoints = [];
   var linePath = [];
-  
+  var counter = 0;
+  var id2List = [];
 
   $('img').on('dragstart', function(event) { event.preventDefault(); });
 
@@ -274,12 +330,39 @@ $(document).ready(function(e) {
   function clearInfo(){
     linePoints = [];
     linePath = [];
+    counter = 0;
+    id2List = [];
     $('#pathInfo').remove();
     $('#initInfo').remove();
+    $('#idList').remove();
     $('.overlay').remove();
     $('.seamPath').remove();
     $('.manualPath').remove();
   }
+  
+  $('#undoPoint').click(function(e){
+    e.preventDefault(); 
+    if($('#initInfo').length != 0) {
+      linePoints = JSON.parse($('#initInfo').text());
+      id2List = JSON.parse($('#idList').text());
+      counter = id2List.length;
+      $('#initInfo').remove();
+      $('#idList').remove();
+    }
+    if(id2List.length > 0){
+      id = id2List[id2List.length-1];
+      attr = $("[id2="+id+"]").attr('id');
+      id2List.pop();
+      linePoints.pop();
+      $("[id2="+id+"]").remove();
+      if(attr == 'start' && id2List.length > 0){
+        findNewStart(id2List);	
+      }
+      else if(attr == 'end' && id2List.length > 1){
+	findNewEnd(id2List);
+      }
+    }
+  });
 
   $('#resetState').click(function(e) {
     e.preventDefault();
@@ -290,32 +373,36 @@ $(document).ready(function(e) {
     var offset = $('.displayed').offset();
     if($('#initInfo').length != 0) {
       linePoints = JSON.parse($('#initInfo').text());
+      id2List = JSON.parse($('#idList').text());
+      counter = id2List.length;
       $('#initInfo').remove();
+      $('#idList').remove();
     }
     var posX = e.pageX - offset.left,posY = e.pageY - offset.top;
     var img;
     var add = true;
     if(linePoints.length == 0){
-      img = $('<div class=\'overlay\' id=\'start\'>');
+      img = $('<div class=overlay id=start id2=' + counter  + '>');
     }
     else if(linePoints.length == 1){
-      img = $('<div class=\'overlay\' id=\'end\'>');
+      img = $('<div class=overlay id=end id2=' + counter + '>');
     }
     else{
       if(e.pageX < $('#start').position().left){
         $('#start').removeAttr('id');
-        img = $('<div class=\'overlay\' id=\'start\'>');
+        img = $('<div class=overlay id=start id2=' + counter + '>');
       }
       else if(e.pageX > $('#end').position().left){
         $('#end').removeAttr('id');
-        img = $('<div class=\'overlay\' id=\'end\'>');
+        img = $('<div class=overlay id=end id2='+ counter + '>');
       }
       else{
-        img = $('<div class=\'overlay\'>');
+        img = $('<div class=overlay id2='+ counter + '>');
       }
     }
     linePoints.push(floorPoint([posX,posY]));
-
+    id2List.push(counter);
+    counter += 1;
     img.css('top', e.pageY-annotationOffset);
     img.css('left',e.pageX-annotationOffset);
     img.appendTo('#container');
@@ -324,23 +411,31 @@ $(document).ready(function(e) {
   function generatePath(){
     if($('#initInfo').length != 0) {
       linePoints = JSON.parse($('#initInfo').text());
+      id2List = JSON.parse($('#idList').text());
+      counter = idList.length;
       $('#initInfo').remove();
+      $('#idList').remove();
     }
     if(type == SEAM){
       if(linePoints.length >= 2){
-        linePoints  = linePoints.sort(function(a,b){return a[0] - b[0]});
-        var maxAngle = getMaxAngle(linePoints);
+        var points  = JSON.parse(JSON.stringify(linePoints));
+        points = points.sort(function(a,b){return a[0] - b[0]});
+        var maxAngle = getMaxAngle(points);
         var n_neighbors = getNumberOfNeighbors();
         var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
-        console.log(neighborAngle);
         if(maxAngle > neighborAngle){
 	  alert("Slope of Plotted points exceeds neighbor range!");
 	  return;
 	}
         var gid = $('#mainImage').attr("alt");
-        $.get('/gradient/'+gid, function( data ) {
-          setTimeout(find_seam(data.gradient, linePoints[0],linePoints[linePoints.length-1],linePoints, n_neighbors), 0 );
-        });
+        if($('#gradientInfo').length != 0){
+          var gradient = JSON.parse($('#gradientInfo').text());
+          setTimeout(find_seam(gradient, points[0],points[points.length-1],points, n_neighbors), 0 );
+        }
+        else{
+          alert("Still loading data please wait to submit");
+          return;
+        }
       }
       else{
         alert("Please Label start and end points before submitting");
@@ -419,6 +514,7 @@ $(document).ready(function(e) {
       var n_neighbors = getNumberOfNeighbors();
       var done = $('#markDone').is(":checked");
       var submit = confirm("Are you sure you want to submit this?");
+      var points = JSON.parse(JSON.stringify(linePoints));
       if(type == SEAM){
         if($('#pathInfo').length == 0) {
           alert('Please Generate the Path First');
@@ -426,7 +522,7 @@ $(document).ready(function(e) {
         else{
           path = JSON.parse($('#pathInfo').text());
           if(submit){
-            points  = linePoints.sort(function(a,b){return a[0] - b[0]});
+            points  = points.sort(function(a,b){return a[0] - b[0]});
             sendPath(path,'seam',points[0],points[points.length-1],linePoints, n_neighbors,done);
             updated = true;
           }
@@ -439,7 +535,7 @@ $(document).ready(function(e) {
         else{
           path = linePath;
           if(!endPoint){
-            points  = linePoints.sort(function(a,b){return a[0] - b[0]});
+            points  = points.sort(function(a,b){return a[0] - b[0]});
             startLocation = points[0];
             endLocation = points[points.length-1];
           }
@@ -455,6 +551,7 @@ $(document).ready(function(e) {
       $('#markDone').attr('checked', false);
       $('#markBad').attr('checked',false);
       $('#inputNeighbors').val($('#inputNeighbors').attr('placeholder'));
+      $('#gradientInfo').remove();
       updateMainImage();
     }
   });

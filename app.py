@@ -56,7 +56,7 @@ def get_next_image():
     index += 1
     if index == len(gid_list):
 	index == 0
-    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData)
+    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
 
 @app.route('/path',methods=['POST'])
 def storePath():
@@ -65,12 +65,11 @@ def storePath():
     jsonData = request.get_json()
     gid = int(jsonData['gid'])
     images[gid] = False
-    if jsonData['done']:
-	print('done')
+    if jsonData['done'] or jsonData['bad']:
 	images.pop(gid,None)
 	gid_list.remove(gid)
     with open("changes.log",'a') as log:
-        log.write("Image Marked as Done: " + ibs.get_image_gnames(gid)+'\n')
+        log.write("Image Updated: " + ibs.get_image_gnames(gid)+'\n')
     fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
 
     values = json.dumps([ibs.get_image_gnames(gid),jsonData])
@@ -100,6 +99,7 @@ def getYGradient(gid):
 if __name__ == '__main__':
     ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
     gid_list = ibs.get_valid_gids()
+    totalImages = len(gid_list)
     #initialInit(ibs,gid_list)
     shuffle(gid_list)
     images = {}

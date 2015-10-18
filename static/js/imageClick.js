@@ -184,8 +184,10 @@ function getGradient(gid){
     $('#gradientInfo').remove();
     info = $('<div id=gradientInfo>');
     info.hide();
-    info.text(JSON.stringify(data.gradient));
-    info.appendTo('body');   
+    info.text(JSON.stringify(data));
+    if(data.gid == $('#mainImage').attr("alt") ){
+      info.appendTo('body');  
+    } 
   });	
 }
 
@@ -429,8 +431,12 @@ $(document).ready(function(e) {
 	}
         var gid = $('#mainImage').attr("alt");
         if($('#gradientInfo').length != 0){
-          var gradient = JSON.parse($('#gradientInfo').text());
-          setTimeout(find_seam(gradient, points[0],points[points.length-1],points, n_neighbors), 0 );
+          var values = JSON.parse($('#gradientInfo').text());
+          if(values.gid != gid){
+	    alert("Still loading data please wait to submit");
+            return;
+	  }
+          setTimeout(find_seam(values.gradient, points[0],points[points.length-1],points, n_neighbors), 0 );
         }
         else{
           alert("Still loading data please wait to submit");
@@ -486,6 +492,7 @@ $(document).ready(function(e) {
     e.preventDefault();
     returnImage();
     clearInfo();
+    $('#gradientInfo').remove();
     $('#markDone').attr('checked', false);
     $('#markBad').attr('checked',false);
     $('#inputNeighbors').val($('#inputNeighbors').attr('placeholder'));

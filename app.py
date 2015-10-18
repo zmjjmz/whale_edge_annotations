@@ -94,14 +94,13 @@ def getYGradient(gid):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
     img = gradient_y_image.tolist()
-    return jsonify(gradient=img)
+    return jsonify(gradient=img,gid=gid)
 
 if __name__ == '__main__':
     ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
     gid_list = ibs.get_valid_gids()
     totalImages = len(gid_list)
     #initialInit(ibs,gid_list)
-    shuffle(gid_list)
     images = {}
     files = glob.glob('annotation_info/*.JSON')
     for gid in gid_list:
@@ -117,6 +116,7 @@ if __name__ == '__main__':
 	if not data[1]['done'] and not badImage:
                 images[gid] = [item,False]
     gid_list = images.keys()
+    shuffle(gid_list)   
     index = 0
 
 

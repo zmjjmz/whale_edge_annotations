@@ -310,6 +310,15 @@ $(document).ready(function(e) {
   var counter = 0;
   var id2List = [];
 
+  var badPlaced = 0;
+  var badRegions = [];
+  var currentBadRegion = [];
+  var placingBadRegion = false;
+
+  var roiTop = [];
+  var roiBottom = [];
+  var markROI = false;
+
   $('img').on('dragstart', function(event) { event.preventDefault(); });
 
   $('#togglePath').click(function(e){
@@ -327,6 +336,43 @@ $(document).ready(function(e) {
     type = MANUAL;
     $('.seamPath').hide();
     $('.manualPath').show();
+  }); 
+
+  $('#badRegion').click(function(e) {
+    e.preventDefault();
+    placingBadRegion = true;
+  });
+
+  $('#toggleBadRegions').click(function(e){
+    e.preventDefault();
+    $('.badRegion').toggle();
+  });
+
+  $('#resetBadRegions').click(function(e){
+    e.preventDefault();
+    badPlaced = 0;
+    badRegions = [];
+    currentBadRegion = [];
+    placingBadRegion = false;
+    $('.badRegion').remove();
+    $('.badRegionPoint').remove();
+  });
+
+  $('#makeROI').click(function(e){
+    e.preventDefault();
+    if(!markROI){
+      markROI = true;
+      alert("Please mark the top left corner");
+    }
+  });
+
+  $('#clearROI').click(function(e){
+    e.preventDefault();
+    markROI = false;
+    roiTop = [];
+    roiBottom = [];
+    $('#ROI').remove();
+    $('.ROI').remove();
   });
   
   function clearInfo(){
@@ -334,12 +380,23 @@ $(document).ready(function(e) {
     linePath = [];
     counter = 0;
     id2List = [];
+    badPlaced = 0;
+    badRegions = [];
+    currentBadRegion = [];
+    placingBadRegion = false;
+    roiTop = [];
+    roiBottom = [];
+    markROI = false;
     $('#pathInfo').remove();
     $('#initInfo').remove();
     $('#idList').remove();
     $('.overlay').remove();
     $('.seamPath').remove();
     $('.manualPath').remove();
+    $('.badRegion').remove();
+    $('.badRegionPoint').remove();
+    $('#ROI').remove();
+    $('.ROI').remove();
   }
   
   $('#undoPoint').click(function(e){
@@ -383,6 +440,82 @@ $(document).ready(function(e) {
     var posX = e.pageX - offset.left,posY = e.pageY - offset.top;
     var img;
     var add = true;
+    
+    if(markROI){
+      if(roiTop.length == 0){
+        roiTop = [posX,posY];
+        img = $('<div class=overlay id=ROI>');
+        img.css('top', e.pageY-annotationOffset);
+        img.css('left',e.pageX-annotationOffset);
+        img.appendTo('#container');
+        alert("Please mark the lower left corner of the ROI");
+      }
+      else{
+	roiBottom = [posX,posY];
+        markROI = false;
+        imgTop = $('<div class=ROI id=roiTop >');
+        imgTop.css('top', roiTop[1] + offset.top);
+        imgTop.css('left',roiTop[0]+ offset.left);
+        imgTop.width(roiBottom[0]-roiTop[0]);
+        
+	imgBottom = $('<div class=ROI id=roiBottom >');
+        imgBottom.css('top', roiBottom[1] + offset.top);
+        imgBottom.css('left',roiTop[0]+ offset.left);
+        imgBottom.width(roiBottom[0]-roiTop[0]);
+
+	imgLeft = $('<div class=ROI id=roiLeft>');
+        imgLeft.css('top', roiTop[1] + offset.top);
+        imgLeft.css('left',roiTop[0]+ offset.left);
+	imgLeft.height(roiBottom[1]-roiTop[1]);
+
+	imgRight = $('<div class=ROI id=roiRight>');
+        imgRight.css('top', roiTop[1] + offset.top);
+        imgRight.css('left',roiBottom[0]+ offset.left);  
+        imgRight.height(roiBottom[1]-roiTop[1]);
+
+        imgTop.appendTo('#container');
+	imgBottom.appendTo('#container');
+	imgLeft.appendTo('#container');
+	imgRight.appendTo('#container');
+	$('#ROI').remove();
+      }
+      return;
+    }
+   
+    if(placingBadRegion){
+      if(badPlaced == 0){
+        currentBadRegion.push(posX);
+        img = $('<div class=badRegionPoint>');
+        img.css('top', e.pageY-annotationOffset);
+        img.css('left',e.pageX-annotationOffset);
+        img.appendTo('#container');
+        badPlaced = 1;
+      }
+      else{
+        placingBadRegion = false;
+        currentBadRegion.push(posX);
+        $('.badRegionPoint').remove();
+        if(posX < currentBadRegion[0]){
+	  var tmp = currentBadRegion[0];
+          currentBadRegion[0] = posX;
+          currentBadRegion.push(tmp);
+        }
+	var range = currentBadRegion[1] - currentBadRegion[0];
+	img = $('<div class=badRegion>');
+        img.css('top', offset.top);
+        img.css('left', currentBadRegion[0] + offset.left);
+        img.width(range);
+        img.height($('#mainImage').height());
+	img.appendTo('#container');
+	badRegions.push(currentBadRegion);
+	currentBadRegion = [];
+        badPlaced = 0;
+      }
+      return;
+    }
+  
+
+
     if(linePoints.length == 0){
       img = $('<div class=overlay id=start id2=' + counter  + '>');
     }

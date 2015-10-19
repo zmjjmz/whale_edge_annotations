@@ -8,7 +8,7 @@
     <div class="form-group">
       <label for="neighbors" class="col-lg-2 control-label">n_neighbors</label>
       <div class="col-lg-10">
-        <input class="form-control" id="inputNeighbors" placeholder="5" type="text">
+        <input class="form-control" id="inputNeighbors" placeholder="5" type="number">
       </div>
     </div>
     <div class="form-group">
@@ -41,6 +41,16 @@
         <input type="checkbox"id="markBad"> Mark Bad Image
       </div>
     </div>
+    <div class="form-group">
+      <div class="col-lg-10 col-lg-offset-2">
+	<button  id="badRegion" class="btn btn-primary">Mark Bad Region</button>
+	<button  id="toggleBadRegions" class="btn btn-primary">Toggle Bad Regions</button>
+	<button  id="resetBadRegions" class="btn btn-primary">Reset Bad Regions</button>
+	<button  id="makeROI" class="btn btn-primary">Make ROI</button>
+	<button  id="clearROI" class="btn btn-primary">Clear ROI</button>
+      </div>
+    </div>	
+
   </fieldset>
 </form>
 

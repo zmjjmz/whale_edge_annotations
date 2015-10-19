@@ -11,6 +11,22 @@ img.displayed {
     position: absolute;
 }
 
+.badRegionPoint{
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #7CFC00;
+}
+
+.badRegion{
+  position: absolute;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #7CFC00;
+}
+
 .overlay{
   position: absolute;
   width: 10px;
@@ -25,7 +41,20 @@ img.displayed {
 }
 
 #end.overlay{
-  border-color: #006600;
+  border-color: #00BFFF;
+}
+
+#ROI.overlay{
+  border-color: #4B0082;
+}
+
+.ROI{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #4B0082;
 }
 
 .seamPath{

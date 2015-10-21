@@ -73,11 +73,11 @@ def storePath():
     fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
 
     values = json.dumps([ibs.get_image_gnames(gid),jsonData])
-   
+
     tmp = open(fileName, 'w')
     tmp.write(values)
     tmp.close
-    
+
     return "Submitted"
 
 @app.route('/checkout',methods=['POST'])
@@ -93,8 +93,10 @@ def getYGradient(gid):
     img = ibs.get_images(gid)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
+    gradient_x_image = -1*cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
     img = gradient_y_image.tolist()
-    return jsonify(gradient=img,gid=gid)
+    img2 = gradient_x_image.toList()
+    return jsonify(gradient=img,gradientX=img2,gid=gid)
 
 if __name__ == '__main__':
     ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
@@ -116,7 +118,7 @@ if __name__ == '__main__':
 	if not data[1]['done'] and not badImage:
                 images[gid] = [item,False]
     gid_list = images.keys()
-    shuffle(gid_list)   
+    shuffle(gid_list)
     index = 0
 
 

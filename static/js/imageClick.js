@@ -108,6 +108,14 @@ function setPassThrough(gradient, pt){
   return gradient;
 }
 
+function setPassThroughVertical(gradient,pt){
+  for(var i = 0; i < gradient[0].length; i++){
+    gradient[pt[1]][i] = Number.NEGATIVE_INFINITY;
+  }
+  gradient[pt[1]][pt[0]] = 0;
+  return gradient;
+}
+
 function getCost(row, col, i, gradient_y_image, cost){
   if(row + i < 0 || row+i >= gradient_y_image.length){
     return Number.NEGATIVE_INFINITY;
@@ -117,10 +125,24 @@ function getCost(row, col, i, gradient_y_image, cost){
   }
 }
 
-function getCandidates(row, col, gradient_y_image, cost, neighbor_range){
+function getCostVertical(row, col, i, gradient, cost){
+  if(col + i < 0 || col+i >= gradient[0].length){
+    return Number.NEGATIVE_INFINITY;
+  }
+  else{
+    return cost[row-1][col+i] + gradient[row][col];
+  }
+}
+
+function getCandidates(row, col, gradient_y_image, cost, neighbor_range,orientation){
 var candidates = [];
   for(var i = 0; i < neighbor_range.length; i++){
-    candidates.push(getCost(row,col,neighbor_range[i],gradient_y_image,cost))
+    if(orientation == 'horizontal'){
+      candidates.push(getCost(row,col,neighbor_range[i],gradient_y_image,cost));
+    }
+    else{
+      candidates.push(getCostVertical(row,col,neighbor_range[i],gradient_y_image,cost));
+    }
   }
   return candidates;
 }
@@ -135,6 +157,48 @@ function argMax(candidates){
     }
   }
   return maxIndex;
+}
+
+function find_seam_vertical(gradient, start,end, n_neighbors,side){
+  if(n_neighbors % 2 != 1){
+    alert("n_neighbors is not an odd number");
+    return;
+  }
+  var neighbor_range = []
+  for(var i = -1 * Math.floor(n_neighbors/2); i < 1 + Math.floor(n_neighbors/2); i++){
+    neighbor_range.push(i);
+  }
+  gradient = setPassThroughVertical(yGradient, start);
+  gradient = setPassThroughVertical(yGradient, end);
+
+  var cost = zeros([yGradient.length, yGradient[0].length ])
+  var back = zeros([yGradient.length, yGradient[0].length ])
+
+  for(var row = start[1]; row < end[1] + 1; row++){
+    for(var col = 0; col < gradient[0].length; col++){
+      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,'vertical');
+      var best = argMax(candidates);
+      back[row][col] = best - Math.floor(n_neighbors / 2);
+      cost[row][col] =  candidates[best];
+    }
+  }
+  var path = [];
+  var curr_x = end[0];
+  var path_cost = 0;
+  for(var row = end[1]+1; row >= start[1]; row--){
+    path_cost += cost[row][curr_x];
+    path.push([curr_x,row]);
+    next_ = curr_x + back[row][curr_x];
+    curr_x = next_;
+  }
+  displayPath(path,side);
+  path = JSON.stringify(path);
+  //Removing previous data
+  $('#path'+side+'Info').remove();
+  info = $('<div id=path'+side+'Info>');
+  info.hide();
+  info.text(path);
+  info.appendTo('body');
 }
 
 function find_seam(yGradient, start,end,linePoints, n_neighbors){
@@ -154,7 +218,7 @@ function find_seam(yGradient, start,end,linePoints, n_neighbors){
 
   for(var col = start[0]; col < end[0] + 1; col++){
     for(var row = 0; row < yGradient.length; row++){
-      candidates = getCandidates(row, col, yGradient, cost, neighbor_range);
+      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,'horizontal');
       var best = argMax(candidates);
       back[row][col] = best - Math.floor(n_neighbors / 2);
       cost[row][col] =  candidates[best];
@@ -186,9 +250,9 @@ function getGradient(gid){
     info.hide();
     info.text(JSON.stringify(data));
     if(data.gid == $('#mainImage').attr("alt") ){
-      info.appendTo('body');  
-    } 
-  });	
+      info.appendTo('body');
+    }
+  });
 }
 
 function initailizeData(data){
@@ -315,9 +379,9 @@ $(document).ready(function(e) {
   var currentBadRegion = [];
   var placingBadRegion = false;
 
-  var roiTop = [];
-  var roiBottom = [];
-  var markROI = false;
+  var labelBottom = false;
+  var waterLeft = [];
+  var waterRight = [];
 
   $('img').on('dragstart', function(event) { event.preventDefault(); });
 
@@ -336,7 +400,7 @@ $(document).ready(function(e) {
     type = MANUAL;
     $('.seamPath').hide();
     $('.manualPath').show();
-  }); 
+  });
 
   $('#badRegion').click(function(e) {
     e.preventDefault();
@@ -358,23 +422,27 @@ $(document).ready(function(e) {
     $('.badRegionPoint').remove();
   });
 
-  $('#makeROI').click(function(e){
+  $('#labelBottom').click(function(e){
     e.preventDefault();
-    if(!markROI){
-      markROI = true;
-      alert("Please mark the top left corner");
+    if(!labelBottom && waterLeft == [] && waterRight == []){
+      labelBottom = true;
+      alert("Please mark the point where the fluke hits the water on the left");
+    }
+    else{
+      alert("Currently can't label points, reset bottom to place points");
     }
   });
 
-  $('#clearROI').click(function(e){
-    e.preventDefault();
-    markROI = false;
-    roiTop = [];
-    roiBottom = [];
-    $('#ROI').remove();
-    $('.ROI').remove();
+  $('$clearBottom').click(function(e){
+    waterLeft = [];
+    waterRight = [];
+    labelBottom = false;
+    $('#left').remove();
+    $('#right').remove();
+    $('.pathLeft').remove();
+    $('.pathRight').remove();
   });
-  
+
   function clearInfo(){
     linePoints = [];
     linePath = [];
@@ -384,9 +452,9 @@ $(document).ready(function(e) {
     badRegions = [];
     currentBadRegion = [];
     placingBadRegion = false;
-    roiTop = [];
-    roiBottom = [];
-    markROI = false;
+    waterLeft = [];
+    waterRight = [];
+    labelBottom = false;
     $('#pathInfo').remove();
     $('#initInfo').remove();
     $('#idList').remove();
@@ -395,12 +463,12 @@ $(document).ready(function(e) {
     $('.manualPath').remove();
     $('.badRegion').remove();
     $('.badRegionPoint').remove();
-    $('#ROI').remove();
-    $('.ROI').remove();
+    $('.pathLeft').remove();
+    $('.pathRight').remove();
   }
-  
+
   $('#undoPoint').click(function(e){
-    e.preventDefault(); 
+    e.preventDefault();
     if($('#initInfo').length != 0) {
       linePoints = JSON.parse($('#initInfo').text());
       id2List = JSON.parse($('#idList').text());
@@ -415,10 +483,10 @@ $(document).ready(function(e) {
       linePoints.pop();
       $("[id2="+id+"]").remove();
       if(attr == 'start' && id2List.length > 0){
-        findNewStart(id2List);	
+        findNewStart(id2List);
       }
       else if(attr == 'end' && id2List.length > 1){
-	findNewEnd(id2List);
+	       findNewEnd(id2List);
       }
     }
   });
@@ -440,48 +508,27 @@ $(document).ready(function(e) {
     var posX = e.pageX - offset.left,posY = e.pageY - offset.top;
     var img;
     var add = true;
-    
-    if(markROI){
-      if(roiTop.length == 0){
-        roiTop = [posX,posY];
-        img = $('<div class=overlay id=ROI>');
+
+    if(labelBottom){
+      if(waterLeft == []){
+        waterLeft = floorPoint([posX,posY]);
+        img = $('<div class=overlay id=left>');
         img.css('top', e.pageY-annotationOffset);
         img.css('left',e.pageX-annotationOffset);
         img.appendTo('#container');
-        alert("Please mark the lower left corner of the ROI");
+        alert("Please mark the point where the fluke hits the water on the right");
       }
       else{
-	roiBottom = [posX,posY];
-        markROI = false;
-        imgTop = $('<div class=ROI id=roiTop >');
-        imgTop.css('top', roiTop[1] + offset.top);
-        imgTop.css('left',roiTop[0]+ offset.left);
-        imgTop.width(roiBottom[0]-roiTop[0]);
-        
-	imgBottom = $('<div class=ROI id=roiBottom >');
-        imgBottom.css('top', roiBottom[1] + offset.top);
-        imgBottom.css('left',roiTop[0]+ offset.left);
-        imgBottom.width(roiBottom[0]-roiTop[0]);
-
-	imgLeft = $('<div class=ROI id=roiLeft>');
-        imgLeft.css('top', roiTop[1] + offset.top);
-        imgLeft.css('left',roiTop[0]+ offset.left);
-	imgLeft.height(roiBottom[1]-roiTop[1]);
-
-	imgRight = $('<div class=ROI id=roiRight>');
-        imgRight.css('top', roiTop[1] + offset.top);
-        imgRight.css('left',roiBottom[0]+ offset.left);  
-        imgRight.height(roiBottom[1]-roiTop[1]);
-
-        imgTop.appendTo('#container');
-	imgBottom.appendTo('#container');
-	imgLeft.appendTo('#container');
-	imgRight.appendTo('#container');
-	$('#ROI').remove();
+        waterRight = floorPoint([posX,posY]);
+        img = $('<div class=overlay id=right>');
+        img.css('top', e.pageY-annotationOffset);
+        img.css('left',e.pageX-annotationOffset);
+        img.appendTo('#container');
+        labelBottom = false;
       }
       return;
     }
-   
+
     if(placingBadRegion){
       if(badPlaced == 0){
         currentBadRegion.push(posX);
@@ -496,25 +543,23 @@ $(document).ready(function(e) {
         currentBadRegion.push(posX);
         $('.badRegionPoint').remove();
         if(posX < currentBadRegion[0]){
-	  var tmp = currentBadRegion[0];
+	         var tmp = currentBadRegion[0];
           currentBadRegion[0] = posX;
           currentBadRegion.push(tmp);
         }
-	var range = currentBadRegion[1] - currentBadRegion[0];
-	img = $('<div class=badRegion>');
+	      var range = currentBadRegion[1] - currentBadRegion[0];
+	      img = $('<div class=badRegion>');
         img.css('top', offset.top);
         img.css('left', currentBadRegion[0] + offset.left);
         img.width(range);
         img.height($('#mainImage').height());
-	img.appendTo('#container');
-	badRegions.push(currentBadRegion);
-	currentBadRegion = [];
+	      img.appendTo('#container');
+	      badRegions.push(currentBadRegion);
+	      currentBadRegion = [];
         badPlaced = 0;
       }
       return;
     }
-  
-
 
     if(linePoints.length == 0){
       img = $('<div class=overlay id=start id2=' + counter  + '>');
@@ -553,32 +598,56 @@ $(document).ready(function(e) {
     }
     if(type == SEAM){
       if(linePoints.length >= 2){
+        if($('#gradientInfo').length == 0){
+          alert("Still loading data please wait to submit");
+          return ;
+        }
+        var gid = $('#mainImage').attr("alt");
+        var values = JSON.parse($('#gradientInfo').text());
+        if(values.gid != gid){
+           alert("Still loading data please wait to submit");
+          return ;
+        }
+        var n_neighbors = getNumberOfNeighbors();
         var points  = JSON.parse(JSON.stringify(linePoints));
         points = points.sort(function(a,b){return a[0] - b[0]});
-        var maxAngle = getMaxAngle(points);
-        var n_neighbors = getNumberOfNeighbors();
-        var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
-        if(maxAngle > neighborAngle){
-	  alert("Slope of Plotted points exceeds neighbor range!");
-	  return;
-	}
-        var gid = $('#mainImage').attr("alt");
-        if($('#gradientInfo').length != 0){
-          var values = JSON.parse($('#gradientInfo').text());
-          if(values.gid != gid){
-	    alert("Still loading data please wait to submit");
-            return;
-	  }
-          setTimeout(find_seam(values.gradient, points[0],points[points.length-1],points, n_neighbors), 0 );
-        }
-        else{
-          alert("Still loading data please wait to submit");
+
+        if($('#makeLeft').is(":checked")){
+          if(waterLeft == []){
+            alert("Please label the bottom left point");
+          }
+          else{
+            setTimeout(find_seam_vertical(values.gradientX, points[0],waterLeft, n_neighbors,'left'), 0 );
+            $('#makeLeft').attr('checked', false);
+          }
           return;
         }
+
+        if($('#makeRight').is(":checked")){
+          if(waterRight == []){
+            alert("Please label the bottom left point");
+          }
+          else{
+            setTimeout(find_seam_vertical(values.gradientX, points[points.length - 1],waterRight, n_neighbors,'right'), 0 );
+            $('#makeRight').attr('checked', false);
+          }
+          return;
+        }
+
+        var maxAngle = getMaxAngle(points);
+        var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
+        if(maxAngle > neighborAngle){
+	         alert("Slope of Plotted points exceeds neighbor range!");
+	          return;
+	      }
+        setTimeout(find_seam(values.gradient, points[0],points[points.length-1],points, n_neighbors), 0 );
+
       }
       else{
         alert("Please Label start and end points before submitting");
       }
+
+
     }
     else{//MANUAL
       linePath = getLinearPath(linePoints)
@@ -597,8 +666,8 @@ $(document).ready(function(e) {
     e.preventDefault();
     generatePath();
   });
-  
-  function returnImage(){ 
+
+  function returnImage(){
     values = {gid:$('#mainImage').attr("alt")};
     $.ajax({
       url: '/checkout',
@@ -608,7 +677,7 @@ $(document).ready(function(e) {
       dataType: 'json',
       async: true
     });
-  }  
+  }
 
   $('#checkout').click(function(e){
     e.preventDefault();

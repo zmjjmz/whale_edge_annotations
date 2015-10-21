@@ -44,17 +44,30 @@ img.displayed {
   border-color: #00BFFF;
 }
 
-#ROI.overlay{
+#left.overlay{
   border-color: #4B0082;
 }
 
-.ROI{
+#right.overlay{
+  border-color:  #FF00FF;
+}
+
+.leftPath{
   position: absolute;
   width: 2px;
   height: 2px;
   border-style: solid;
   border-width: 2px;
   border-color: #4B0082;
+}
+
+.rightPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #FF00FF;
 }
 
 .seamPath{

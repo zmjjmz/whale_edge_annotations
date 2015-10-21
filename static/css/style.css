@@ -25,6 +25,7 @@ img.displayed {
   border-style: solid;
   border-width: 2px;
   border-color: #7CFC00;
+  background-color: rgba(124,252,0,0.2);
 }
 
 .overlay{

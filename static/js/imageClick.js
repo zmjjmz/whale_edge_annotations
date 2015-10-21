@@ -70,12 +70,7 @@ function displayPath(path,type){
     var offset = $('.displayed').offset();
     var posX = path[i][0] + offset.left;
     posY = path[i][1] + offset.top;
-    if(type == 'seam'){
-      img = $('<div class=seamPath >');
-    }
-    else{
-      img = $('<div class=manualPath >');
-    }
+    img = $('<div class='+type+'Path >');
     img.css('left', posX);
     img.css('top',posY);
     img.appendTo('#container');
@@ -125,23 +120,31 @@ function getCost(row, col, i, gradient_y_image, cost){
   }
 }
 
-function getCostVertical(row, col, i, gradient, cost){
+function getCostVertical(row, col, i, gradient, cost,side){
+  var multiplier = 1.0;
+  if(side == 'left'){
+    multiplier = -1.0;
+  }
   if(col + i < 0 || col+i >= gradient[0].length){
     return Number.NEGATIVE_INFINITY;
   }
   else{
-    return cost[row-1][col+i] + gradient[row][col];
+    var gradientValue = gradient[row][col];
+    if(gradientValue != Number.NEGATIVE_INFINITY){
+	gradientValue = gradientValue * multiplier;
+    }
+    return cost[row-1][col+i] + gradientValue;
   }
 }
 
-function getCandidates(row, col, gradient_y_image, cost, neighbor_range,orientation){
+function getCandidates(row, col, gradient_y_image, cost, neighbor_range,orientation,side){
 var candidates = [];
   for(var i = 0; i < neighbor_range.length; i++){
     if(orientation == 'horizontal'){
       candidates.push(getCost(row,col,neighbor_range[i],gradient_y_image,cost));
     }
     else{
-      candidates.push(getCostVertical(row,col,neighbor_range[i],gradient_y_image,cost));
+      candidates.push(getCostVertical(row,col,neighbor_range[i],gradient_y_image,cost,side));
     }
   }
   return candidates;
@@ -168,15 +171,15 @@ function find_seam_vertical(gradient, start,end, n_neighbors,side){
   for(var i = -1 * Math.floor(n_neighbors/2); i < 1 + Math.floor(n_neighbors/2); i++){
     neighbor_range.push(i);
   }
-  gradient = setPassThroughVertical(yGradient, start);
-  gradient = setPassThroughVertical(yGradient, end);
+  gradient = setPassThroughVertical(gradient, start);
+  gradient = setPassThroughVertical(gradient, end);
 
-  var cost = zeros([yGradient.length, yGradient[0].length ])
-  var back = zeros([yGradient.length, yGradient[0].length ])
+  var cost = zeros([gradient.length, gradient[0].length ])
+  var back = zeros([gradient.length, gradient[0].length ])
 
   for(var row = start[1]; row < end[1] + 1; row++){
     for(var col = 0; col < gradient[0].length; col++){
-      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,'vertical');
+      candidates = getCandidates(row, col, gradient, cost, neighbor_range,'vertical',side);
       var best = argMax(candidates);
       back[row][col] = best - Math.floor(n_neighbors / 2);
       cost[row][col] =  candidates[best];
@@ -218,7 +221,7 @@ function find_seam(yGradient, start,end,linePoints, n_neighbors){
 
   for(var col = start[0]; col < end[0] + 1; col++){
     for(var row = 0; row < yGradient.length; row++){
-      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,'horizontal');
+      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,'horizontal',null);
       var best = argMax(candidates);
       back[row][col] = best - Math.floor(n_neighbors / 2);
       cost[row][col] =  candidates[best];
@@ -237,7 +240,7 @@ function find_seam(yGradient, start,end,linePoints, n_neighbors){
   path = JSON.stringify(path);
   //Removing previous data
   $('#pathInfo').remove();
-  info = $('<div id=\'pathInfo\'>');
+  info = $('<div id=pathInfo>');
   info.hide();
   info.text(path);
   info.appendTo('body');
@@ -382,6 +385,7 @@ $(document).ready(function(e) {
   var labelBottom = false;
   var waterLeft = [];
   var waterRight = [];
+  var bottomPath = [];
 
   $('img').on('dragstart', function(event) { event.preventDefault(); });
 
@@ -424,7 +428,7 @@ $(document).ready(function(e) {
 
   $('#labelBottom').click(function(e){
     e.preventDefault();
-    if(!labelBottom && waterLeft == [] && waterRight == []){
+    if(!labelBottom){
       labelBottom = true;
       alert("Please mark the point where the fluke hits the water on the left");
     }
@@ -433,14 +437,18 @@ $(document).ready(function(e) {
     }
   });
 
-  $('$clearBottom').click(function(e){
+  $('#clearBottom').click(function(e){
+    e.preventDefault();
     waterLeft = [];
     waterRight = [];
+    bottomPath = [];
     labelBottom = false;
     $('#left').remove();
     $('#right').remove();
-    $('.pathLeft').remove();
-    $('.pathRight').remove();
+    $('.leftPath').remove();
+    $('.rightPath').remove();
+    $('#pathRightInfo').remove();
+    $('#pathLeftInfo').remove();
   });
 
   function clearInfo(){
@@ -454,8 +462,11 @@ $(document).ready(function(e) {
     placingBadRegion = false;
     waterLeft = [];
     waterRight = [];
+    bottomPath = [];
     labelBottom = false;
     $('#pathInfo').remove();
+    $('#pathRightInfo').remove();
+    $('#pathLeftInfo').remove();
     $('#initInfo').remove();
     $('#idList').remove();
     $('.overlay').remove();
@@ -463,8 +474,8 @@ $(document).ready(function(e) {
     $('.manualPath').remove();
     $('.badRegion').remove();
     $('.badRegionPoint').remove();
-    $('.pathLeft').remove();
-    $('.pathRight').remove();
+    $('.leftPath').remove();
+    $('.rightPath').remove();
   }
 
   $('#undoPoint').click(function(e){
@@ -510,7 +521,7 @@ $(document).ready(function(e) {
     var add = true;
 
     if(labelBottom){
-      if(waterLeft == []){
+      if(waterLeft.length == 0){
         waterLeft = floorPoint([posX,posY]);
         img = $('<div class=overlay id=left>');
         img.css('top', e.pageY-annotationOffset);
@@ -613,7 +624,7 @@ $(document).ready(function(e) {
         points = points.sort(function(a,b){return a[0] - b[0]});
 
         if($('#makeLeft').is(":checked")){
-          if(waterLeft == []){
+          if(waterLeft.length == 0){
             alert("Please label the bottom left point");
           }
           else{
@@ -624,7 +635,7 @@ $(document).ready(function(e) {
         }
 
         if($('#makeRight').is(":checked")){
-          if(waterRight == []){
+          if(waterRight.length == 0){
             alert("Please label the bottom left point");
           }
           else{

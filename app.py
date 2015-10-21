@@ -93,9 +93,9 @@ def getYGradient(gid):
     img = ibs.get_images(gid)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gradient_y_image = -1*cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
-    gradient_x_image = -1*cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
+    gradient_x_image = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
     img = gradient_y_image.tolist()
-    img2 = gradient_x_image.toList()
+    img2 = gradient_x_image.tolist()
     return jsonify(gradient=img,gradientX=img2,gid=gid)
 
 if __name__ == '__main__':

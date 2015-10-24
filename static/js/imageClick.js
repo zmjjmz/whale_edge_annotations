@@ -774,39 +774,44 @@ $(document).ready(function(e) {
       $('#idList').remove();
     }
 
-    if(type == SEAM){
-      if(linePoints.length >= 2){
-        if($('#gradientInfo').length == 0){
-          alert("Still loading data please wait to submit");
-          return ;
-        }
-        var gid = $('#mainImage').attr("alt");
-        var values = JSON.parse($('#gradientInfo').text());
-        if(values.gid != gid){
-           alert("Still loading data please wait to submit");
-          return ;
-        }
-        var n_neighbors = getNumberOfNeighbors();
-        var points  = JSON.parse(JSON.stringify(linePoints));
-        points = points.sort(function(a,b){return a[0] - b[0]});
+    if(linePoints.length >= 2){
+      if($('#gradientInfo').length == 0){
+        alert("Still loading data please wait to submit");
+        return ;
+      }
+      var gid = $('#mainImage').attr("alt");
+      var values = JSON.parse($('#gradientInfo').text());
+      if(values.gid != gid){
+         alert("Still loading data please wait to submit");
+        return ;
+      }
+      var n_neighbors = getNumberOfNeighbors();
+      var points  = JSON.parse(JSON.stringify(linePoints));
+      points = points.sort(function(a,b){return a[0] - b[0]});
 
-        var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
-        if(labelLeft){
-          if(leftPoints.length == 0){
-            alert("Please label the left points");
-            return;
-          }
-          else{
-	    var lPoints = JSON.parse(JSON.stringify(leftPoints));
-	    lPoints.push(points[0]);
-	    var maxLeftAngle = getMaxAngle(lPoints, 'vertical');
+      var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
+      if(labelLeft){
+        if(leftPoints.length == 0){
+          alert("Please label the left points");
+          return;
+        }
+        else{
+          var lPoints = JSON.parse(JSON.stringify(leftPoints));
+	  lPoints.push(points[0]);
+          if(type == SEAM){
+            var maxLeftAngle = getMaxAngle(lPoints, 'vertical');
             if(maxLeftAngle > neighborAngle){
-          	alert("Slope of Plotted points exceeds neighbor range! Left");
+        	alert("Slope of Plotted points exceeds neighbor range! Left");
           	return;
        	    }
             setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,'left'),0);
           }
+          else{//MANUAL
+            linePath = getLinearPath(lPoints);
+            displayPath(linePath,'left',true);
+          }
         }
+      }
 
         else if(labelRight){
           if(rightPoints.length == 0){
@@ -816,21 +821,33 @@ $(document).ready(function(e) {
           else{
             var rPoints = JSON.parse(JSON.stringify(rightPoints));
             rPoints.push(points[points.length -1]);
-            var maxRightAngle = getMaxAngle(rPoints, 'vertical');
-            if(maxRightAngle > neighborAngle){
-                alert("Slope of Plotted points exceeds neighbor range! Right");
-                return;
+            if(type == SEAM){
+              var maxRightAngle = getMaxAngle(rPoints);
+              if(maxRightAngle > neighborAngle){
+                  alert("Slope of Plotted points exceeds neighbor range! Right");
+                  return;
+              }
+              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,'right'),0);
             }
-            setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,'right'),0);
+            else{//MANUAL
+              linePath = getLinearPath(rPoints);
+              displayPath(linePath,'right',true);
+            }
           }
         }
-        else if(labelTop){       
-        var maxAngle = getMaxAngle(points,'horizontal');
-          if(maxAngle > neighborAngle){
-            alert("Slope of Plotted points exceeds neighbor range! Top");
-            return;
+        else if(labelTop){
+          if(type == SEAM){
+            var maxAngle = getMaxAngle(points,'horizontal');
+            if(maxAngle > neighborAngle){
+              alert("Slope of Plotted points exceeds neighbor range! Top");
+              return;
+            }
+            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,'top'), 0 );
           }
-          setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,'top'), 0 );
+          else{//MANUAL
+            linePath = getLinearPath(points);
+            displayPath(linePath,'top',true);
+          }
         }
         else if(labelBottom){
 	  if(leftPoints.length == 0 && rightPoints.length == 0){
@@ -844,22 +861,23 @@ $(document).ready(function(e) {
           bPoints = JSON.parse(JSON.stringify(bottomPoints));
           bPoints.push(rPoints[rPoints.length - 1]);
           bPoints.push(lPoints[lPoints.length - 1]);
-          var maxAngle = getMaxAngle(bPoints,'horizontal');
-          if(maxAngle > neighborAngle){
-            alert("Slope of Plotted points exceeds neighbor range! Bottom");
-            return;
+          if(type == SEAM){
+            var maxAngle = getMaxAngle(bPoints,'horizontal');
+            if(maxAngle > neighborAngle){
+              alert("Slope of Plotted points exceeds neighbor range! Bottom");
+              return;
+            }
+            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,'bottom'), 0 );
           }
-          setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,'bottom'), 0 );
+          else{//MANUAL
+            linePath = getLinearPath(bPoints);
+            displayPath(linePath,'bottom',true);
+          }
         }
       }
       else{
         alert("Please Label start and end points before submitting");
       }
-    }
-    else{//MANUAL
-      linePath = getLinearPath(linePoints)
-      displayPath(linePath,'manual',true)
-    }
   }
 
   $(document).keypress(function(e) {

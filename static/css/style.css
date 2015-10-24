@@ -28,29 +28,95 @@ img.displayed {
   background-color: rgba(124,252,0,0.2);
 }
 
-.overlay{
+.leftControl{
   position: absolute;
   width: 10px;
   height: 10px;
   border-style: solid;
   border-width: 2px;
-  border-color: yellow;
+  border-color: #4B0582;
 }
 
-#start.overlay{
-  border-color: orange;
+
+.rightControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #FF05FF;
 }
 
-#end.overlay{
-  border-color: #00BFFF;
+.topControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: red;
 }
 
-#left.overlay{
-  border-color: #4B0082;
+.bottomControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #ADFF2F;
 }
 
-#right.overlay{
-  border-color:  #FF00FF;
+.badLinePoint{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #A0002F;
+}
+
+.badLineTPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #AD002F;
+}
+
+.badLineBPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #00FF2F;
+}
+
+.badLineLPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #A2CC2A;
+}
+
+.badLineRPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #CC11FC;
+}
+
+.bottomPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #ADFF2F;
 }
 
 .leftPath{
@@ -71,20 +137,20 @@ img.displayed {
   border-color: #FF00FF;
 }
 
-.seamPath{
+.topPath{
   position: absolute;
   border-style: solid;
   border-width: 1px;
-  width: 1px;
-  height: 1px;
-  border-color: rgba(255,0,0,0.5);
+  width: 2px;
+  height: 2px;
+  border-color: red;
 }
 
 .manualPath{
   position: absolute;
   border-style: solid;
   border-width: 1px;
-  width: 1px;
-  height: 1px;
+  width: 2px;
+  height: 2px;
   border-color: rgba(0,255,255,0.5)
 }

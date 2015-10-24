@@ -7,7 +7,7 @@
     <legend>Options</legend>
     <div class="form-group">
       <label for="neighbors" class="col-lg-2 control-label">n_neighbors</label>
-      <div class="col-lg-10">
+      <div class="col-lg-2">
         <input class="form-control" id="inputNeighbors" placeholder="5" type="number">
       </div>
     </div>
@@ -28,6 +28,39 @@
         </div>
       </div>
     </div>
+
+    <div class="form-group">
+      <label class="col-lg-2 control-label">Annotation Location</label>
+      <div class="col-lg-1">
+        <div class="radio">
+          <label>
+            <input name="typesRadios" id="typeTop" value="option1" checked="" type="radio">
+            Top
+          </label>
+        </div>
+        <div class="radio">
+          <label>
+            <input name="typesRadios" id="typeLeft" value="option2" type="radio">
+            Left
+          </label>
+        </div>
+      </div>
+      <div class="col-lg-9">
+	<div class="radio">
+          <label>
+            <input name="typesRadios" id="typeRight" value="option3" type="radio">
+            Right
+          </label>
+        </div>
+        <div class="radio">
+          <label>
+            <input name="typesRadios" id="typeBottom" value="optio4" type="radio">
+            Bottom
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="form-group">
       <div class="col-lg-10 col-lg-offset-2">
         <button  id="resetState" class="btn btn-warning">Reset</button>
@@ -41,17 +74,16 @@
         <input type="checkbox"id="markBad"> Mark Bad Image
       </div>
     </div>
+
     <div class="form-group">
       <div class="col-lg-10 col-lg-offset-2">
       	<button  id="badRegion" class="btn btn-primary">Mark Bad Region</button>
       	<button  id="toggleBadRegions" class="btn btn-primary">Toggle Bad Regions</button>
       	<button  id="resetBadRegions" class="btn btn-primary">Reset Bad Regions</button>
-      	<button  id="labelBottom" class="btn btn-primary">Label Lower</button>
-      	<button  id="clearBottom" class="btn btn-primary">Clear Lower</button>
-        <input type="checkbox"id="makeLeft"> Make Left Path
-        <input type="checkbox"id="makeRight"> Make Right Path
-      </div>
-    </div>
+	<button  id="badLineMake" class="btn btn-primary">Make Line</button>
+        <button  id="clearBadLines" class="btn btn-primary">Clear Lines</button>
+     </div>
+   </div>
 
   </fieldset>
 </form>

@@ -710,7 +710,7 @@ $(document).ready(function(e) {
     
     if(placingBadRegion){
       if(badPlaced == 0){
-        currentBadRegion.push(posX);
+        currentBadRegion.push(floorPoint([posX,posY]));
         img = $('<div class=badRegionPoint>');
         img.css('top', e.pageY-annotationOffset);
         img.css('left',e.pageX-annotationOffset);
@@ -719,19 +719,22 @@ $(document).ready(function(e) {
       }
       else{
         placingBadRegion = false;
-        currentBadRegion.push(posX);
         $('.badRegionPoint').remove();
-        if(posX < currentBadRegion[0]){
+        if(posX < currentBadRegion[0][0]){
 	  var tmp = currentBadRegion[0];
-          currentBadRegion[0] = posX;
+          currentBadRegion[0] = floorPoint([posX,posY]);
           currentBadRegion.push(tmp);
         }
-	var range = currentBadRegion[1] - currentBadRegion[0];
+        else{
+ 	  currentBadRegion.push(floorPoint([posX,posY]));
+        }
+	var range = currentBadRegion[1][0] - currentBadRegion[0][0];
+        var height = currentBadRegion[1][1] - currentBadRegion[0][1];
 	img = $('<div class=badRegion>');
-        img.css('top', offset.top);
-        img.css('left', currentBadRegion[0] + offset.left);
+        img.css('top', offset.top + currentBadRegion[0][1]);
+        img.css('left', currentBadRegion[0][0] + offset.left);
         img.width(range);
-        img.height($('#mainImage').height());
+        img.height(height);
 	img.appendTo('#container');
 	badRegions.push(currentBadRegion);
 	currentBadRegion = [];

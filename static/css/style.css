@@ -20,14 +20,39 @@ img.displayed {
   border-color: #7CFC00;
 }
 
-.badRegion{
+.badTopRegion{
   position: absolute;
   border-style: solid;
+  width : 2px;
+  height: 2px;
   border-width: 2px;
-  border-color: #7CFC00;
-  background-color: rgba(124,252,0,0.2);
+  border-color: black;
 }
 
+.badBottomRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
+.badRightRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
+.badLeftRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
 .leftControl{
   position: absolute;
   width: 10px;

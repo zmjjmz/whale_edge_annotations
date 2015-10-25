@@ -39,8 +39,26 @@ function isLeftPoint(lowerLeft, lowerRight, point){
   return leftDistance < rightDistance;
 }
 
-function sendPath(path,type,start,end,linePoints, n_neighbors,done){
-  var arr = { gid:$('#mainImage').attr("alt"),path: path, type: type,left:start,right:end,linePoints:linePoints,neighbors:n_neighbors,done:done, bad:false };
+function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints){
+  var topInfo = path = JSON.parse($('#pathtopInfo').text());
+  topInfo['badPoints'] = badTopPoints;   
+  var arr = { gid:$('#mainImage').attr("alt"),done:done, bad:false, topInfo:topInfo };
+  if($('#pathleftInfo').length != 0){
+    var leftInfo = JSON.parse($('#pathleftInfo').text());
+    leftInfo['badPoints'] = badLeftPoints;
+    arr['leftInfo'] = leftInfo;
+  }
+  if($('#pathrightInfo').length != 0){
+    var rightInfo = JSON.parse($('#pathrightInfo').text());
+    rightInfo['badPoints'] = badRightPoints;
+    arr['rightInfo'] = rightInfo;
+  }
+  if($('#pathbottomInfo').length != 0){
+    var bottomInfo = JSON.parse($('#pathbottomInfo').text());
+    bottomInfo['badPoints'] = badBottomPoints;
+    arr['bottomInfo'] = bottomInfo;
+  }
+  return;
   $.ajax({
     url: '/path',
     type: 'POST',
@@ -283,12 +301,13 @@ function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side){
     curr_x = next_;
   }
   displayPath(path,side,true);
-  path = JSON.stringify(path);
+  var pathData = {path:path,neighbors:n_neighbors,linePoints:linePoints,type:'seam'};
+  var pathData = JSON.stringify(pathData);
   //Removing previous data
   $('#path'+side+'Info').remove();
   info = $('<div id=path'+side+'Info>');
   info.hide();
-  info.text(path);
+  info.text(pathData);
   info.appendTo('body');
 }
 
@@ -332,12 +351,13 @@ function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side){
     curr_y = next_;
   }
   displayPath(path,side,true);
-  path = JSON.stringify(path);
-  //Removing previous datai
+  var pathData = {path:path,neighbors:n_neighbors,linePoints:linePoints,type:'seam'};
+  pathData = JSON.stringify(pathData);
+  //Removing previous data
   $('#path'+side+'Info').remove();
   info = $('<div id=path'+side+'Info>');
   info.hide();
-  info.text(path);
+  info.text(pathData);
   info.appendTo('body');
 }
 
@@ -427,9 +447,6 @@ function updateMainImage(){
 
 function getNumberOfNeighbors(){
   var n_neighbors = $('#inputNeighbors').val();
-  if(n_neighbors == ''){
-    n_neighbors = $('#inputNeighbors').attr('placeholder');
-  }
   return parseInt(n_neighbors);
 }
 
@@ -437,6 +454,7 @@ $(document).ready(function(e) {
   var SEAM = "seam";
   var MANUAL = "manual";
   var type = SEAM;
+  var testing = false;
   //Set the size of container to size of image
   var overlay = $("<div class=topControl><div>").hide().appendTo("body");
   var annotationOffset = overlay.width()/2;
@@ -450,7 +468,10 @@ $(document).ready(function(e) {
   var id2List = [];
 
   var badPlaced = 0;
-  var badRegions = [];
+  var badLeftPoints = [];
+  var badRightPoints = [];
+  var badTopPoints = [];
+  var badBottomPoints = [];
   var currentBadRegion = [];
   var placingBadRegion = false;
 
@@ -539,16 +560,26 @@ $(document).ready(function(e) {
 
   $('#toggleBadRegions').click(function(e){
     e.preventDefault();
-    $('.badRegion').toggle();
+    $('.badTopRegion').toggle();
+    $('.badRightRegion').toggle();
+    $('.badLeftRegion').toggle();
+    $('.badBottomRegion').toggle();
   });
 
   $('#resetBadRegions').click(function(e){
     e.preventDefault();
     badPlaced = 0;
-    badRegions = [];
+    badLeftPoints = [];
+    badRightPoints = [];
+    badTopPoints = [];
+    badBottomPoints = [];
+    currentBadRegion = [];
     currentBadRegion = [];
     placingBadRegion = false;
-    $('.badRegion').remove();
+    $('.badTopRegion').remove();
+    $('.badBottomRegion').remove();
+    $('.badLeftRegion').remove();
+    $('.badRightRegion').remove();
     $('.badRegionPoint').remove();
   });
 
@@ -580,7 +611,10 @@ $(document).ready(function(e) {
     id2List = [];
 
     badPlaced = 0;
-    badRegions = [];
+    badLeftPoints = [];
+    badRightPoints = [];
+    badTopPoints = [];
+    badBottomPoints = [];
     currentBadRegion = [];
     placingBadRegion = false;
 
@@ -609,7 +643,10 @@ $(document).ready(function(e) {
     $('.topPath').remove();
     $('.bottomPath').remove();
     $('.manualPath').remove();
-    $('.badRegion').remove();
+    $('.badTopRegion').remove();
+    $('.badBottomRegion').remove();
+    $('.badLeftRegion').remove();
+    $('.badRightRegion').remove();
     $('.badRegionPoint').remove();
     $('.leftPath').remove();
     $('.rightPath').remove();
@@ -718,25 +755,72 @@ $(document).ready(function(e) {
         badPlaced = 1;
       }
       else{
+        var path = [];
+        var region = "";
         placingBadRegion = false;
         $('.badRegionPoint').remove();
-        if(posX < currentBadRegion[0][0]){
-	  var tmp = currentBadRegion[0];
-          currentBadRegion[0] = floorPoint([posX,posY]);
-          currentBadRegion.push(tmp);
+        currentBadRegion.push(floorPoint([posX,posY]));
+        if(labelTop || labelBottom){
+          if(currentBadRegion[0][0] > currentBadRegion[1][0]){
+	    var tmp = currentBadRegion[0];
+            currentBadRegion[0] = currentBadRegion[1];
+            currentBadRegion[1] = tmp;
+          }
+          if(labelTop){
+	    path = JSON.parse($('#pathtopInfo').text())['path'];
+            region = "badTopRegion";
+          }
+          else{
+            path = JSON.parse($('#pathbottomInfo').text())['path'];
+	    region = "badBottomRegion";
+          }
         }
-        else{
- 	  currentBadRegion.push(floorPoint([posX,posY]));
+        else if(labelLeft || labelRight){
+	  if(currentBadRegion[0][1] > currentBadRegion[1][1]){
+            var tmp = currentBadRegion[0];
+            currentBadRegion[0] = currentBadRegion[1];
+            currentBadRegion[1] = tmp;
+	  }
+          if(labelLeft){
+	    path = JSON.parse($('#pathleftInfo').text())['path'];
+	    region = "badLeftRegion";
+          }
+          else{
+	    path = JSON.parse($('#pathrightInfo').text())['path'];
+	    region = "badRightRegion";
+          }
         }
-	var range = currentBadRegion[1][0] - currentBadRegion[0][0];
-        var height = currentBadRegion[1][1] - currentBadRegion[0][1];
-	img = $('<div class=badRegion>');
-        img.css('top', offset.top + currentBadRegion[0][1]);
-        img.css('left', currentBadRegion[0][0] + offset.left);
-        img.width(range);
-        img.height(height);
-	img.appendTo('#container');
-	badRegions.push(currentBadRegion);
+        for(var i = 0; i < path.length; i++){
+          var change = false;
+          if(labelTop || labelBottom){
+            if(path[i][0] >= currentBadRegion[0][0] && path[i][0] <= currentBadRegion[1][0]){
+		change = true;
+                if(labelTop){
+                  badTopPoints.push(path[i]);
+                }
+                else{
+		  badBottomPoints.push(path[i]);
+		}
+            }
+          }
+          else if(labelLeft || labelRight){
+	    if(path[i][1] >= currentBadRegion[0][1] && path[i][1] <= currentBadRegion[1][1]){
+                change = true;
+		if(labelLeft){
+                  badLeftPoints.push(path[i]);
+                }
+                else{
+                  badLeftPoints.push(path[i]);
+                }
+            }
+          }
+          if(change){
+	    img = $('<div class='+region+'>');
+            img.css('top', offset.top + path[i][1]);
+            img.css('left', path[i][0] + offset.left);
+            img.appendTo('#container');
+          }
+        }
 	currentBadRegion = [];
         badPlaced = 0;
       }
@@ -809,6 +893,14 @@ $(document).ready(function(e) {
           else{//MANUAL
             linePath = getLinearPath(lPoints);
             displayPath(linePath,'left',true);
+            var pathData = {path:linePath,linePoints:lPoints,type:'manual'};
+            pathData = JSON.stringify(pathData);
+            //Removing previous data
+            $('#pathleftInfo').remove();
+            var info = $('<div id=pathleftInfo>');
+            info.hide();
+            info.text(pathData);
+            info.appendTo('body');
           }
         }
       }
@@ -822,7 +914,7 @@ $(document).ready(function(e) {
             var rPoints = JSON.parse(JSON.stringify(rightPoints));
             rPoints.push(points[points.length -1]);
             if(type == SEAM){
-              var maxRightAngle = getMaxAngle(rPoints);
+              var maxRightAngle = getMaxAngle(rPoints,'vertical');
               if(maxRightAngle > neighborAngle){
                   alert("Slope of Plotted points exceeds neighbor range! Right");
                   return;
@@ -832,6 +924,14 @@ $(document).ready(function(e) {
             else{//MANUAL
               linePath = getLinearPath(rPoints);
               displayPath(linePath,'right',true);
+	      var pathData = {path:linePath,linePoints:rPoints,type:'manual'};
+              pathData = JSON.stringify(pathData);
+              //Removing previous data
+              $('#pathrightInfo').remove();
+              var info = $('<div id=pathrightInfo>');
+              info.hide();
+              info.text(pathData);
+              info.appendTo('body');
             }
           }
         }
@@ -847,6 +947,14 @@ $(document).ready(function(e) {
           else{//MANUAL
             linePath = getLinearPath(points);
             displayPath(linePath,'top',true);
+            var pathData = {path:linePath,linePoints:points,type:'manual'};
+            pathData = JSON.stringify(pathData);
+            //Removing previous data
+            $('#pathtopInfo').remove();
+            var info = $('<div id=pathtopInfo>');
+            info.hide();
+            info.text(pathData);
+            info.appendTo('body');
           }
         }
         else if(labelBottom){
@@ -872,6 +980,14 @@ $(document).ready(function(e) {
           else{//MANUAL
             linePath = getLinearPath(bPoints);
             displayPath(linePath,'bottom',true);
+	    var pathData = {path:linePath,linePoints:bPoints,type:'manual'};
+            pathData = JSON.stringify(pathData);
+            //Removing previous data
+            $('#pathbottomInfo').remove();
+            var info = $('<div id=pathbottomInfo>');
+            info.hide();
+            info.text(pathData);
+            info.appendTo('body');
           }
         }
       }
@@ -922,12 +1038,16 @@ $(document).ready(function(e) {
     $('#gradientInfo').remove();
     $('#markDone').attr('checked', false);
     $('#markBad').attr('checked',false);
-    $('#inputNeighbors').val($('#inputNeighbors').attr('placeholder'));
+    $('#inputNeighbors').val('5');
     updateMainImage();
   });
 
   $('#manualSubmit').click(function(e){
     e.preventDefault();
+    if(testing){
+	alert('This feature is undergoing testing please try again after an update');
+	return;
+    }
     var updated = false;
     if($('#markBad').is(":checked")){
       var bad = confirm("Send Image as Marked Bad?");
@@ -949,42 +1069,21 @@ $(document).ready(function(e) {
       var done = $('#markDone').is(":checked");
       var submit = confirm("Are you sure you want to submit this?");
       var points = JSON.parse(JSON.stringify(linePoints));
-      if(type == SEAM){
-        if($('#pathInfo').length == 0) {
-          alert('Please Generate the Path First');
+        if($('#pathtopInfo').length == 0) {
+          alert('Please Generate the Top Path First');
         }
         else{
-          path = JSON.parse($('#pathInfo').text());
           if(submit){
-            points  = points.sort(function(a,b){return a[0] - b[0]});
-            sendPath(path,'seam',points[0],points[points.length-1],linePoints, n_neighbors,done);
+            sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints);
             updated = true;
           }
         }
-      }
-      else{
-        if(linePath.length == 0){
-          alert('Please Generate the Path First');
-        }
-        else{
-          path = linePath;
-          if(!endPoint){
-            points  = points.sort(function(a,b){return a[0] - b[0]});
-            startLocation = points[0];
-            endLocation = points[points.length-1];
-          }
-          if(submit){
-            sendPath(path,'manual',startLocation,endLocation,linePoints, n_neighbors,done);
-            updated = true;
-          }
-        }
-      }
     }
     if(updated){
       clearInfo();
       $('#markDone').attr('checked', false);
       $('#markBad').attr('checked',false);
-      $('#inputNeighbors').val($('#inputNeighbors').attr('placeholder'));
+      $('#inputNeighbors').val('5');
       $('#gradientInfo').remove();
       updateMainImage();
     }

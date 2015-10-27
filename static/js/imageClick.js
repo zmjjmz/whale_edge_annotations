@@ -58,7 +58,6 @@ function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoint
     bottomInfo['badPoints'] = badBottomPoints;
     arr['bottomInfo'] = bottomInfo;
   }
-  return;
   $.ajax({
     url: '/path',
     type: 'POST',
@@ -451,14 +450,20 @@ function getNumberOfNeighbors(){
 }
 
 $(document).ready(function(e) {
-  var SEAM = "seam";
-  var MANUAL = "manual";
-  var type = SEAM;
-  var testing = false;
+  const  SEAM = "seam";
+  const MANUAL = "manual";
+  const TOP = 'top';
+  const BOTTOM = 'bottom';
+  const  LEFT = 'left';
+  const  RIGHT = 'right';
+
+  const testing = true;
   //Set the size of container to size of image
   var overlay = $("<div class=topControl><div>").hide().appendTo("body");
   var annotationOffset = overlay.width()/2;
   overlay.remove();
+
+  var type = SEAM;
   //Load first image for user
   updateMainImage();
   var linePoints = [];
@@ -479,11 +484,7 @@ $(document).ready(function(e) {
   var leftPoints = [];
   var rightPoints = [];
   
-  var labelTop = true;
-  var labelLeft = false;
-  var labelRight = false;
-  var labelBottom = false;
-  var pointType = 'top';
+  var pointType = TOP;
   var topLines = [];
   var bottomLines = [];
   var leftLines = [];
@@ -491,20 +492,57 @@ $(document).ready(function(e) {
   var currentLine = [];
   var makeLine = false;
 
+  var imageLoadCheck = setInterval(showIsLoaded, 500);
+  
+  function showIsLoaded(){
+    if($('#gradientInfo').length != 0){
+      $('#makePath').attr('class', 'btn btn-primary');
+      clearInterval(imageLoadCheck);
+    }
+  }
+  
+  function changeType(label){
+    pointType = label;
+    if(pointType == TOP){
+      $('#typeLeft').prop('checked', false);
+      $('#typeRight').prop('checked', false);
+      $('#typeBottom').prop('checked', false);
+      $('#typeTop').prop('checked', true)
+    }
+    else if(pointType == BOTTOM){
+      $('#typeLeft').prop('checked', false);
+      $('#typeRight').prop('checked', false);
+      $('#typeBottom').prop('checked', true);
+      $('#typeTop').prop('checked', false);
+    }
+    else if(pointType == LEFT){
+      $('#typeLeft').prop('checked', true);
+      $('#typeRight').prop('checked', false);
+      $('#typeBottom').prop('checked', false);
+      $('#typeTop').prop('checked', false);
+    }
+    else if(pointType == RIGHT){
+      $('#typeLeft').prop('checked', false);
+      $('#typeRight').prop('checked', true);
+      $('#typeBottom').prop('checked', false);
+      $('#typeTop').prop('checked', false);
+    }
+  }
+  
   $('img').on('dragstart', function(event) { event.preventDefault(); });
 
   $('#togglePath').click(function(e){
     e.preventDefault();
-    if(labelTop){
+    if(pointType == TOP){
       $('.topPath').toggle();
     }
-    else if (labelBottom) {
+    else if (pointType == BOTTOM) {
       $('.bottomPath').toggle();
     }
-    else if (labelLeft) {
+    else if (pointType == LEFT) {
       $('.leftPath').toggle();
     }
-    else if (labelRight){
+    else if (pointType == RIGHT){
       $('.rightPath').toggle();
     } 
   });
@@ -522,35 +560,19 @@ $(document).ready(function(e) {
   });
 
   $('#typeTop').click(function(e){
-    labelTop = true;
-    labelLeft = false;
-    labelRight = false;
-    labelBottom = false;
-    pointType = 'top';
+    changeType(TOP);
   });
 
   $('#typeLeft').click(function(e){
-    labelTop = false;
-    labelLeft = true;
-    labelRight = false;
-    labelBottom = false;
-    pointType = 'left';
+    changeType(LEFT);
   });
 
   $('#typeRight').click(function(e){
-    labelTop = false;
-    labelLeft = false;
-    labelRight = true;
-    labelBottom = false;
-    pointType = 'right';
+    changeType(RIGHT);
   });
   
   $('#typeBottom').click(function(e){
-    labelTop = false;
-    labelLeft = false;
-    labelRight = false;
-    labelBottom = true;
-    pointType = 'bottom';
+    changeType(BOTTOM);
   });
 
   $('#badRegion').click(function(e) {
@@ -628,11 +650,7 @@ $(document).ready(function(e) {
     rightLines = [];
     currentLine = [];
     makeLine = false;
-    pointType = 'top';
-    labelTop = true;
-    labelLeft = false;
-    labelRight = false;
-    labelBottom = false;
+    pointType = TOP;
     $('#pathtopInfo').remove();
     $('#pathleftInfo').remove();
     $('#pathrightInfo').remove();
@@ -724,19 +742,19 @@ $(document).ready(function(e) {
         //Classify, store pair, draw path
         makeLine = false;
         var path = getLinearPath(currentLine);
-        if(labelTop){
+        if(pointType == TOP){
           topLines.push(currentLine);
           displayPath(path,'badLineT',false);
         }
-        else if(labelLeft){
+        else if(pointType == LEFT){
           leftLines.push(currentLine);
           displayPath(path,'badLineL',false);
         }
-        else if(labelRight){
+        else if(pointType == RIGHT){
  	  rightLines.push(currentLine); 
           displayPath(path,'badLineR',false);
         }
-        else if(labelBottom){
+        else if(pointType == BOTTOM){
           bottomLines.push(currentLine);  
           displayPath(path,'badLineB',false);
         }
@@ -760,13 +778,13 @@ $(document).ready(function(e) {
         placingBadRegion = false;
         $('.badRegionPoint').remove();
         currentBadRegion.push(floorPoint([posX,posY]));
-        if(labelTop || labelBottom){
+        if(pointType == TOP || pointType == BOTTOM){
           if(currentBadRegion[0][0] > currentBadRegion[1][0]){
 	    var tmp = currentBadRegion[0];
             currentBadRegion[0] = currentBadRegion[1];
             currentBadRegion[1] = tmp;
           }
-          if(labelTop){
+          if(pointType == TOP){
 	    path = JSON.parse($('#pathtopInfo').text())['path'];
             region = "badTopRegion";
           }
@@ -775,13 +793,13 @@ $(document).ready(function(e) {
 	    region = "badBottomRegion";
           }
         }
-        else if(labelLeft || labelRight){
+        else if(pointType == LEFT || pointType == RIGHT){
 	  if(currentBadRegion[0][1] > currentBadRegion[1][1]){
             var tmp = currentBadRegion[0];
             currentBadRegion[0] = currentBadRegion[1];
             currentBadRegion[1] = tmp;
 	  }
-          if(labelLeft){
+          if(pointType == LEFT){
 	    path = JSON.parse($('#pathleftInfo').text())['path'];
 	    region = "badLeftRegion";
           }
@@ -792,25 +810,25 @@ $(document).ready(function(e) {
         }
         for(var i = 0; i < path.length; i++){
           var change = false;
-          if(labelTop || labelBottom){
+          if(pointType == TOP || pointType == BOTTOM){
             if(path[i][0] >= currentBadRegion[0][0] && path[i][0] <= currentBadRegion[1][0]){
 		change = true;
-                if(labelTop){
-                  badTopPoints.push(path[i]);
+                if(pointType == TOP){
+                  badTopPoints.push(i);
                 }
                 else{
-		  badBottomPoints.push(path[i]);
+		  badBottomPoints.push(i);
 		}
             }
           }
-          else if(labelLeft || labelRight){
+          else if(pointType == LEFT || pointType == RIGHT){
 	    if(path[i][1] >= currentBadRegion[0][1] && path[i][1] <= currentBadRegion[1][1]){
                 change = true;
-		if(labelLeft){
-                  badLeftPoints.push(path[i]);
+		if(pointType == LEFT){
+                  badLeftPoints.push(i);
                 }
                 else{
-                  badLeftPoints.push(path[i]);
+                  badLeftPoints.push(i);
                 }
             }
           }
@@ -826,15 +844,15 @@ $(document).ready(function(e) {
       }
       return;
     }
-    if(labelTop){
+    if(pointType == TOP){
       img = $('<div class=topControl id2=' + counter  + '>'); 
       linePoints.push(floorPoint([posX,posY]));
     }
-    else if(labelLeft){
+    else if(pointType == LEFT){
       img = $('<div class=leftControl id2=' + counter  + '>');           
       leftPoints.push(floorPoint([posX,posY]));
     }
-    else if(labelRight){
+    else if(pointType == RIGHT){
       img = $('<div class=rightControl id2=' + counter  + '>');
       rightPoints.push(floorPoint([posX,posY]));
     }
@@ -874,7 +892,7 @@ $(document).ready(function(e) {
       points = points.sort(function(a,b){return a[0] - b[0]});
 
       var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
-      if(labelLeft){
+      if(pointType == LEFT){
         if(leftPoints.length == 0){
           alert("Please label the left points");
           return;
@@ -905,7 +923,7 @@ $(document).ready(function(e) {
         }
       }
 
-        else if(labelRight){
+        else if(pointType == RIGHT){
           if(rightPoints.length == 0){
             alert("Please label the right points");
             return;
@@ -935,7 +953,7 @@ $(document).ready(function(e) {
             }
           }
         }
-        else if(labelTop){
+        else if(pointType == TOP){
           if(type == SEAM){
             var maxAngle = getMaxAngle(points,'horizontal');
             if(maxAngle > neighborAngle){
@@ -957,7 +975,7 @@ $(document).ready(function(e) {
             info.appendTo('body');
           }
         }
-        else if(labelBottom){
+        else if(pointType == BOTTOM){
 	  if(leftPoints.length == 0 && rightPoints.length == 0){
             alert("Please label the left and the right sides first!");
 	    return;
@@ -997,10 +1015,23 @@ $(document).ready(function(e) {
   }
 
   $(document).keypress(function(e) {
-    if(e.which == 13) {
+    if(e.which == 32) {
       e.preventDefault();
       generatePath();
     }
+    else if(e.which == 87 || e.which == 119){
+      changeType(TOP);
+    }
+    else if(e.which == 65 || e.which == 97){
+      changeType(LEFT);
+    }
+    else if(e.which == 83 || e.which == 115){
+      changeType(BOTTOM);
+    }
+    else if(e.which == 68 || e.which == 100){
+      changeType(RIGHT);
+    }
+    console.log(e.which);
   });
 
   $('#makePath').click(function(e){
@@ -1039,7 +1070,9 @@ $(document).ready(function(e) {
     $('#markDone').attr('checked', false);
     $('#markBad').attr('checked',false);
     $('#inputNeighbors').val('5');
+    $('#makePath').attr('class', 'btn btn-danger');
     updateMainImage();
+    imageLoadCheck = setInterval(showIsLoaded, 500);
   });
 
   $('#manualSubmit').click(function(e){
@@ -1085,7 +1118,9 @@ $(document).ready(function(e) {
       $('#markBad').attr('checked',false);
       $('#inputNeighbors').val('5');
       $('#gradientInfo').remove();
+      $('#makePath').attr('class', 'btn btn-danger');
       updateMainImage();
+      imageLoadCheck = setInterval(showIsLoaded, 500);
     }
   });
   $(window).bind('beforeunload',function(){

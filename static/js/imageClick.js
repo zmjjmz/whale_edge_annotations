@@ -41,7 +41,7 @@ function isLeftPoint(lowerLeft, lowerRight, point){
 
 function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints){
   var topInfo = path = JSON.parse($('#pathtopInfo').text());
-  topInfo['badPoints'] = badTopPoints;   
+  topInfo['badPoints'] = badTopPoints;
   var arr = { gid:$('#mainImage').attr("alt"),done:done, bad:false, topInfo:topInfo };
   if($('#pathleftInfo').length != 0){
     var leftInfo = JSON.parse($('#pathleftInfo').text());
@@ -138,11 +138,11 @@ function getLinearPath(points){
       if(startPoint[1] > endPoint[1]){
         var temp = startPoint;
         startPoint = endPoint;
-        endPoint = temp; 
+        endPoint = temp;
       }
       for(var j = startPoint[1]; j < endPoint[1]; j++){
         path.push(floorPoint([startPoint[0] , j]));
-      } 
+      }
     }
     path.push(points[i]);
   }
@@ -325,7 +325,7 @@ function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side){
   for(var i = 0; i < linePoints.length; i++){
     yGradient = setPassThrough(yGradient, linePoints[i]);
   }
-  
+
   for(var i = 0; i < lines.length; i++){
    yGradient = lineAdjustment(yGradient,getLinearPath(lines[i]),side)
   }
@@ -483,7 +483,7 @@ $(document).ready(function(e) {
   var bottomPoints = [];
   var leftPoints = [];
   var rightPoints = [];
-  
+
   var pointType = TOP;
   var topLines = [];
   var bottomLines = [];
@@ -493,14 +493,14 @@ $(document).ready(function(e) {
   var makeLine = false;
 
   var imageLoadCheck = setInterval(showIsLoaded, 500);
-  
+
   function showIsLoaded(){
     if($('#gradientInfo').length != 0){
       $('#makePath').attr('class', 'btn btn-primary');
       clearInterval(imageLoadCheck);
     }
   }
-  
+
   function changeType(label){
     pointType = label;
     if(pointType == TOP){
@@ -528,68 +528,8 @@ $(document).ready(function(e) {
       $('#typeTop').prop('checked', false);
     }
   }
-  
-  $('img').on('dragstart', function(event) { event.preventDefault(); });
 
-  $('#togglePath').click(function(e){
-    e.preventDefault();
-    if(pointType == TOP){
-      $('.topPath').toggle();
-    }
-    else if (pointType == BOTTOM) {
-      $('.bottomPath').toggle();
-    }
-    else if (pointType == LEFT) {
-      $('.leftPath').toggle();
-    }
-    else if (pointType == RIGHT){
-      $('.rightPath').toggle();
-    } 
-  });
-
-  $('#optionsRadios1').click(function(e) {
-    type = SEAM;
-    $('.manualPath').hide();
-    $('.seamPath').show();
-  });
-
-  $('#optionsRadios2').click(function(e) {
-    type = MANUAL;
-    $('.seamPath').hide();
-    $('.manualPath').show();
-  });
-
-  $('#typeTop').click(function(e){
-    changeType(TOP);
-  });
-
-  $('#typeLeft').click(function(e){
-    changeType(LEFT);
-  });
-
-  $('#typeRight').click(function(e){
-    changeType(RIGHT);
-  });
-  
-  $('#typeBottom').click(function(e){
-    changeType(BOTTOM);
-  });
-
-  $('#badRegion').click(function(e) {
-    e.preventDefault();
-    placingBadRegion = true;
-  });
-
-  $('#toggleBadRegions').click(function(e){
-    e.preventDefault();
-    $('.badTopRegion').toggle();
-    $('.badRightRegion').toggle();
-    $('.badLeftRegion').toggle();
-    $('.badBottomRegion').toggle();
-  });
-
-  $('#resetBadRegions').click(function(e){
-    e.preventDefault();
+  function resetBadRegions(){
     badPlaced = 0;
     badLeftPoints = [];
     badRightPoints = [];
@@ -603,15 +543,9 @@ $(document).ready(function(e) {
     $('.badLeftRegion').remove();
     $('.badRightRegion').remove();
     $('.badRegionPoint').remove();
-  });
+  }
 
-  $('#badLineMake').click(function(e){
-    e.preventDefault();
-    makeLine = true;
-  }); 
-  
-  $('#clearBadLines').click(function(e){
-    e.preventDefault();
+  function resetBoundingLines(){
     makeLine = false;
     topLines = [];
     bottomLines = [];
@@ -623,7 +557,7 @@ $(document).ready(function(e) {
     $('.badLineLPath').remove();
     $('.badLineRPath').remove();
     $('.badLineBPath').remove();
-  });
+  }
 
   function clearInfo(){
     linePoints = [];
@@ -632,24 +566,13 @@ $(document).ready(function(e) {
     counter = 0;
     id2List = [];
 
-    badPlaced = 0;
-    badLeftPoints = [];
-    badRightPoints = [];
-    badTopPoints = [];
-    badBottomPoints = [];
-    currentBadRegion = [];
-    placingBadRegion = false;
+    resetBadRegions();
 
     bottomPoints = [];
     leftPoints = [];
     rightPoints = [];
 
-    topLines = [];
-    bottomLines = [];
-    leftLines = [];
-    rightLines = [];
-    currentLine = [];
-    makeLine = false;
+    resetBoundingLines();
     pointType = TOP;
     $('#pathtopInfo').remove();
     $('#pathleftInfo').remove();
@@ -660,12 +583,6 @@ $(document).ready(function(e) {
     $('.topControl').remove();
     $('.topPath').remove();
     $('.bottomPath').remove();
-    $('.manualPath').remove();
-    $('.badTopRegion').remove();
-    $('.badBottomRegion').remove();
-    $('.badLeftRegion').remove();
-    $('.badRightRegion').remove();
-    $('.badRegionPoint').remove();
     $('.leftPath').remove();
     $('.rightPath').remove();
     $('.leftControl').remove();
@@ -677,15 +594,216 @@ $(document).ready(function(e) {
     $('#typeRight').prop('checked', false);
     $('#typeBottom').prop('checked', false);
     $('#typeTop').prop('checked', true);
-    $('.badLinePoint').remove();
-    $('.badLineTPath').remove();
-    $('.badLineLPath').remove();
-    $('.badLineRPath').remove();
-    $('.badLineBPath').remove();
   }
 
-  $('#undoPoint').click(function(e){
-    e.preventDefault();
+  function sendInformation(){
+    if(testing){
+	    alert('This feature is undergoing testing please try again after an update');
+	    return;
+    }
+    var updated = false;
+    if($('#markBad').is(":checked")){
+      var bad = confirm("Send Image as Marked Bad?");
+      if(bad){
+        var arr = { gid:$('#mainImage').attr("alt"),bad:true,done:false};
+        $.ajax({
+          url: '/path',
+          type: 'POST',
+          data: JSON.stringify(arr),
+          contentType: 'application/json; charset=utf-8',
+          dataType: 'json',
+          async: true
+        });
+        updated = true;
+      }
+    }
+    else{
+      var n_neighbors = getNumberOfNeighbors();
+      var done = $('#markDone').is(":checked");
+      var submit = confirm("Are you sure you want to submit this?");
+      var points = JSON.parse(JSON.stringify(linePoints));
+      if($('#pathtopInfo').length == 0) {
+        alert('Please Generate the Top Path First');
+      }
+      else{
+        if(submit){
+          sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints);
+          updated = true;
+        }
+      }
+    }
+    if(updated){
+      clearInfo();
+      $('#markDone').attr('checked', false);
+      $('#markBad').attr('checked',false);
+      $('#inputNeighbors').val('5');
+      $('#gradientInfo').remove();
+      $('#makePath').attr('class', 'btn btn-danger');
+      updateMainImage();
+      imageLoadCheck = setInterval(showIsLoaded, 500);
+    }
+  }
+
+  function generatePath(){
+    if($('#initInfo').length != 0) {
+      linePoints = JSON.parse($('#initInfo').text());
+      id2List = JSON.parse($('#idList').text());
+      counter = idList.length;
+      $('#initInfo').remove();
+      $('#idList').remove();
+    }
+
+    if(linePoints.length >= 2){
+      if($('#gradientInfo').length == 0){
+        alert("Still loading data please wait to submit");
+        return ;
+      }
+      var gid = $('#mainImage').attr("alt");
+      var values = JSON.parse($('#gradientInfo').text());
+      if(values.gid != gid){
+         alert("Still loading data please wait to submit");
+        return ;
+      }
+      var n_neighbors = getNumberOfNeighbors();
+      var points  = JSON.parse(JSON.stringify(linePoints));
+      points = points.sort(function(a,b){return a[0] - b[0]});
+
+      var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
+      if(pointType == LEFT){
+        if(leftPoints.length == 0){
+          alert("Please label the left points");
+          return;
+        }
+        else{
+          var lPoints = JSON.parse(JSON.stringify(leftPoints));
+	        lPoints.push(points[0]);
+          if(type == SEAM){
+            var maxLeftAngle = getMaxAngle(lPoints, 'vertical');
+            if(maxLeftAngle > neighborAngle){
+        	    alert("Slope of Plotted points exceeds neighbor range! Left");
+          	  return;
+       	    }
+            setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,'left'),0);
+          }
+          else{//MANUAL
+            linePath = getLinearPath(lPoints);
+            displayPath(linePath,'left',true);
+            var pathData = {path:linePath,linePoints:lPoints,type:'manual'};
+            pathData = JSON.stringify(pathData);
+            //Removing previous data
+            $('#pathleftInfo').remove();
+            var info = $('<div id=pathleftInfo>');
+            info.hide();
+            info.text(pathData);
+            info.appendTo('body');
+          }
+        }
+      }
+
+        else if(pointType == RIGHT){
+          if(rightPoints.length == 0){
+            alert("Please label the right points");
+            return;
+          }
+          else{
+            var rPoints = JSON.parse(JSON.stringify(rightPoints));
+            rPoints.push(points[points.length -1]);
+            if(type == SEAM){
+              var maxRightAngle = getMaxAngle(rPoints,'vertical');
+              if(maxRightAngle > neighborAngle){
+                  alert("Slope of Plotted points exceeds neighbor range! Right");
+                  return;
+              }
+              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,'right'),0);
+            }
+            else{//MANUAL
+              linePath = getLinearPath(rPoints);
+              displayPath(linePath,'right',true);
+	            var pathData = {path:linePath,linePoints:rPoints,type:'manual'};
+              pathData = JSON.stringify(pathData);
+              //Removing previous data
+              $('#pathrightInfo').remove();
+              var info = $('<div id=pathrightInfo>');
+              info.hide();
+              info.text(pathData);
+              info.appendTo('body');
+            }
+          }
+        }
+        else if(pointType == TOP){
+          if(type == SEAM){
+            var maxAngle = getMaxAngle(points,'horizontal');
+            if(maxAngle > neighborAngle){
+              alert("Slope of Plotted points exceeds neighbor range! Top");
+              return;
+            }
+            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,'top'), 0 );
+          }
+          else{//MANUAL
+            linePath = getLinearPath(points);
+            displayPath(linePath,'top',true);
+            var pathData = {path:linePath,linePoints:points,type:'manual'};
+            pathData = JSON.stringify(pathData);
+            //Removing previous data
+            $('#pathtopInfo').remove();
+            var info = $('<div id=pathtopInfo>');
+            info.hide();
+            info.text(pathData);
+            info.appendTo('body');
+          }
+        }
+        else if(pointType == BOTTOM){
+	        if(leftPoints.length == 0 && rightPoints.length == 0){
+            alert("Please label the left and the right sides first!");
+	          return;
+          }
+          var rPoints = JSON.parse(JSON.stringify(rightPoints));
+    	    rPoints  = rPoints.sort(function(a,b){return a[1] - b[1]});
+	        var lPoints = JSON.parse(JSON.stringify(leftPoints));
+          lPoints  = lPoints.sort(function(a,b){return a[1] - b[1]});
+          bPoints = JSON.parse(JSON.stringify(bottomPoints));
+          bPoints.push(rPoints[rPoints.length - 1]);
+          bPoints.push(lPoints[lPoints.length - 1]);
+          if(type == SEAM){
+            var maxAngle = getMaxAngle(bPoints,'horizontal');
+            if(maxAngle > neighborAngle){
+              alert("Slope of Plotted points exceeds neighbor range! Bottom");
+              return;
+            }
+            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,'bottom'), 0 );
+          }
+          else{//MANUAL
+            linePath = getLinearPath(bPoints);
+            displayPath(linePath,'bottom',true);
+	          var pathData = {path:linePath,linePoints:bPoints,type:'manual'};
+            pathData = JSON.stringify(pathData);
+            //Removing previous data
+            $('#pathbottomInfo').remove();
+            var info = $('<div id=pathbottomInfo>');
+            info.hide();
+            info.text(pathData);
+            info.appendTo('body');
+          }
+        }
+      }
+      else{
+        alert("Please Label start and end points before submitting");
+      }
+  }
+
+  function returnImage(){
+    values = {gid:$('#mainImage').attr("alt")};
+    $.ajax({
+      url: '/checkout',
+      type: 'POST',
+      data: JSON.stringify(values),
+      contentType: 'application/json; charset=utf-8',
+      dataType: 'json',
+      async: true
+    });
+  }
+
+  function undoPoint(){
     if($('#initInfo').length != 0) {
       linePoints = JSON.parse($('#initInfo').text());
       id2List = JSON.parse($('#idList').text());
@@ -707,10 +825,85 @@ $(document).ready(function(e) {
         rightPoints.pop();
       }
       else if(classId == 'bottomControl'){
-	bottomPoints.pop();
+	      bottomPoints.pop();
       }
       $("[id2="+id+"]").remove();
     }
+  }
+
+  $('img').on('dragstart', function(event) { event.preventDefault(); });
+
+  $('#togglePath').click(function(e){
+    e.preventDefault();
+    if(pointType == TOP){
+      $('.topPath').toggle();
+    }
+    else if (pointType == BOTTOM) {
+      $('.bottomPath').toggle();
+    }
+    else if (pointType == LEFT) {
+      $('.leftPath').toggle();
+    }
+    else if (pointType == RIGHT){
+      $('.rightPath').toggle();
+    }
+  });
+
+  $('#optionsRadios1').click(function(e) {
+    type = SEAM;
+  });
+
+  $('#optionsRadios2').click(function(e) {
+    type = MANUAL;
+  });
+
+  $('#typeTop').click(function(e){
+    changeType(TOP);
+  });
+
+  $('#typeLeft').click(function(e){
+    changeType(LEFT);
+  });
+
+  $('#typeRight').click(function(e){
+    changeType(RIGHT);
+  });
+
+  $('#typeBottom').click(function(e){
+    changeType(BOTTOM);
+  });
+
+  $('#badRegion').click(function(e) {
+    e.preventDefault();
+    placingBadRegion = true;
+  });
+
+  $('#toggleBadRegions').click(function(e){
+    e.preventDefault();
+    $('.badTopRegion').toggle();
+    $('.badRightRegion').toggle();
+    $('.badLeftRegion').toggle();
+    $('.badBottomRegion').toggle();
+  });
+
+  $('#resetBadRegions').click(function(e){
+    e.preventDefault();
+    resetBadRegions();
+  });
+
+  $('#badLineMake').click(function(e){
+    e.preventDefault();
+    makeLine = true;
+  });
+
+  $('#clearBadLines').click(function(e){
+    e.preventDefault();
+    resetBoundingLines();
+  });
+
+  $('#undoPoint').click(function(e){
+    e.preventDefault();
+    undoPoint();
   });
 
   $('#resetState').click(function(e) {
@@ -751,18 +944,18 @@ $(document).ready(function(e) {
           displayPath(path,'badLineL',false);
         }
         else if(pointType == RIGHT){
- 	  rightLines.push(currentLine); 
+ 	        rightLines.push(currentLine);
           displayPath(path,'badLineR',false);
         }
         else if(pointType == BOTTOM){
-          bottomLines.push(currentLine);  
+          bottomLines.push(currentLine);
           displayPath(path,'badLineB',false);
         }
         currentLine = [];
       }
       return;
     }
-    
+
     if(placingBadRegion){
       if(badPlaced == 0){
         currentBadRegion.push(floorPoint([posX,posY]));
@@ -780,76 +973,76 @@ $(document).ready(function(e) {
         currentBadRegion.push(floorPoint([posX,posY]));
         if(pointType == TOP || pointType == BOTTOM){
           if(currentBadRegion[0][0] > currentBadRegion[1][0]){
-	    var tmp = currentBadRegion[0];
+	          var tmp = currentBadRegion[0];
             currentBadRegion[0] = currentBadRegion[1];
             currentBadRegion[1] = tmp;
           }
           if(pointType == TOP){
-	    path = JSON.parse($('#pathtopInfo').text())['path'];
+	          path = JSON.parse($('#pathtopInfo').text())['path'];
             region = "badTopRegion";
           }
           else{
             path = JSON.parse($('#pathbottomInfo').text())['path'];
-	    region = "badBottomRegion";
+	          region = "badBottomRegion";
           }
         }
         else if(pointType == LEFT || pointType == RIGHT){
-	  if(currentBadRegion[0][1] > currentBadRegion[1][1]){
-            var tmp = currentBadRegion[0];
-            currentBadRegion[0] = currentBadRegion[1];
-            currentBadRegion[1] = tmp;
-	  }
+	          if(currentBadRegion[0][1] > currentBadRegion[1][1]){
+              var tmp = currentBadRegion[0];
+              currentBadRegion[0] = currentBadRegion[1];
+              currentBadRegion[1] = tmp;
+	          }
           if(pointType == LEFT){
-	    path = JSON.parse($('#pathleftInfo').text())['path'];
-	    region = "badLeftRegion";
+	          path = JSON.parse($('#pathleftInfo').text())['path'];
+	          region = "badLeftRegion";
           }
           else{
-	    path = JSON.parse($('#pathrightInfo').text())['path'];
-	    region = "badRightRegion";
+	          path = JSON.parse($('#pathrightInfo').text())['path'];
+	          region = "badRightRegion";
           }
         }
         for(var i = 0; i < path.length; i++){
           var change = false;
           if(pointType == TOP || pointType == BOTTOM){
             if(path[i][0] >= currentBadRegion[0][0] && path[i][0] <= currentBadRegion[1][0]){
-		change = true;
+	           	change = true;
                 if(pointType == TOP){
                   badTopPoints.push(i);
                 }
                 else{
-		  badBottomPoints.push(i);
-		}
+		              badBottomPoints.push(i);
+		            }
             }
           }
           else if(pointType == LEFT || pointType == RIGHT){
-	    if(path[i][1] >= currentBadRegion[0][1] && path[i][1] <= currentBadRegion[1][1]){
-                change = true;
-		if(pointType == LEFT){
-                  badLeftPoints.push(i);
-                }
-                else{
-                  badLeftPoints.push(i);
-                }
+	          if(path[i][1] >= currentBadRegion[0][1] && path[i][1] <= currentBadRegion[1][1]){
+              change = true;
+		          if(pointType == LEFT){
+                badLeftPoints.push(i);
+              }
+              else{
+                badLeftPoints.push(i);
+              }
             }
           }
           if(change){
-	    img = $('<div class='+region+'>');
+	          img = $('<div class='+region+'>');
             img.css('top', offset.top + path[i][1]);
             img.css('left', path[i][0] + offset.left);
             img.appendTo('#container');
           }
         }
-	currentBadRegion = [];
+	      currentBadRegion = [];
         badPlaced = 0;
       }
       return;
     }
     if(pointType == TOP){
-      img = $('<div class=topControl id2=' + counter  + '>'); 
+      img = $('<div class=topControl id2=' + counter  + '>');
       linePoints.push(floorPoint([posX,posY]));
     }
     else if(pointType == LEFT){
-      img = $('<div class=leftControl id2=' + counter  + '>');           
+      img = $('<div class=leftControl id2=' + counter  + '>');
       leftPoints.push(floorPoint([posX,posY]));
     }
     else if(pointType == RIGHT){
@@ -867,157 +1060,17 @@ $(document).ready(function(e) {
     img.appendTo('#container');
   });
 
-  function generatePath(){
-    if($('#initInfo').length != 0) {
-      linePoints = JSON.parse($('#initInfo').text());
-      id2List = JSON.parse($('#idList').text());
-      counter = idList.length;
-      $('#initInfo').remove();
-      $('#idList').remove();
-    }
-
-    if(linePoints.length >= 2){
-      if($('#gradientInfo').length == 0){
-        alert("Still loading data please wait to submit");
-        return ;
-      }
-      var gid = $('#mainImage').attr("alt");
-      var values = JSON.parse($('#gradientInfo').text());
-      if(values.gid != gid){
-         alert("Still loading data please wait to submit");
-        return ;
-      }
-      var n_neighbors = getNumberOfNeighbors();
-      var points  = JSON.parse(JSON.stringify(linePoints));
-      points = points.sort(function(a,b){return a[0] - b[0]});
-
-      var neighborAngle = Math.abs(Math.atan2(Math.floor(n_neighbors/2),1));
-      if(pointType == LEFT){
-        if(leftPoints.length == 0){
-          alert("Please label the left points");
-          return;
-        }
-        else{
-          var lPoints = JSON.parse(JSON.stringify(leftPoints));
-	  lPoints.push(points[0]);
-          if(type == SEAM){
-            var maxLeftAngle = getMaxAngle(lPoints, 'vertical');
-            if(maxLeftAngle > neighborAngle){
-        	alert("Slope of Plotted points exceeds neighbor range! Left");
-          	return;
-       	    }
-            setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,'left'),0);
-          }
-          else{//MANUAL
-            linePath = getLinearPath(lPoints);
-            displayPath(linePath,'left',true);
-            var pathData = {path:linePath,linePoints:lPoints,type:'manual'};
-            pathData = JSON.stringify(pathData);
-            //Removing previous data
-            $('#pathleftInfo').remove();
-            var info = $('<div id=pathleftInfo>');
-            info.hide();
-            info.text(pathData);
-            info.appendTo('body');
-          }
-        }
-      }
-
-        else if(pointType == RIGHT){
-          if(rightPoints.length == 0){
-            alert("Please label the right points");
-            return;
-          }
-          else{
-            var rPoints = JSON.parse(JSON.stringify(rightPoints));
-            rPoints.push(points[points.length -1]);
-            if(type == SEAM){
-              var maxRightAngle = getMaxAngle(rPoints,'vertical');
-              if(maxRightAngle > neighborAngle){
-                  alert("Slope of Plotted points exceeds neighbor range! Right");
-                  return;
-              }
-              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,'right'),0);
-            }
-            else{//MANUAL
-              linePath = getLinearPath(rPoints);
-              displayPath(linePath,'right',true);
-	      var pathData = {path:linePath,linePoints:rPoints,type:'manual'};
-              pathData = JSON.stringify(pathData);
-              //Removing previous data
-              $('#pathrightInfo').remove();
-              var info = $('<div id=pathrightInfo>');
-              info.hide();
-              info.text(pathData);
-              info.appendTo('body');
-            }
-          }
-        }
-        else if(pointType == TOP){
-          if(type == SEAM){
-            var maxAngle = getMaxAngle(points,'horizontal');
-            if(maxAngle > neighborAngle){
-              alert("Slope of Plotted points exceeds neighbor range! Top");
-              return;
-            }
-            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,'top'), 0 );
-          }
-          else{//MANUAL
-            linePath = getLinearPath(points);
-            displayPath(linePath,'top',true);
-            var pathData = {path:linePath,linePoints:points,type:'manual'};
-            pathData = JSON.stringify(pathData);
-            //Removing previous data
-            $('#pathtopInfo').remove();
-            var info = $('<div id=pathtopInfo>');
-            info.hide();
-            info.text(pathData);
-            info.appendTo('body');
-          }
-        }
-        else if(pointType == BOTTOM){
-	  if(leftPoints.length == 0 && rightPoints.length == 0){
-            alert("Please label the left and the right sides first!");
-	    return;
-          }
-          var rPoints = JSON.parse(JSON.stringify(rightPoints));
-    	  rPoints  = rPoints.sort(function(a,b){return a[1] - b[1]});
-	  var lPoints = JSON.parse(JSON.stringify(leftPoints));
-          lPoints  = lPoints.sort(function(a,b){return a[1] - b[1]});
-          bPoints = JSON.parse(JSON.stringify(bottomPoints));
-          bPoints.push(rPoints[rPoints.length - 1]);
-          bPoints.push(lPoints[lPoints.length - 1]);
-          if(type == SEAM){
-            var maxAngle = getMaxAngle(bPoints,'horizontal');
-            if(maxAngle > neighborAngle){
-              alert("Slope of Plotted points exceeds neighbor range! Bottom");
-              return;
-            }
-            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,'bottom'), 0 );
-          }
-          else{//MANUAL
-            linePath = getLinearPath(bPoints);
-            displayPath(linePath,'bottom',true);
-	    var pathData = {path:linePath,linePoints:bPoints,type:'manual'};
-            pathData = JSON.stringify(pathData);
-            //Removing previous data
-            $('#pathbottomInfo').remove();
-            var info = $('<div id=pathbottomInfo>');
-            info.hide();
-            info.text(pathData);
-            info.appendTo('body');
-          }
-        }
-      }
-      else{
-        alert("Please Label start and end points before submitting");
-      }
-  }
-
   $(document).keypress(function(e) {
+    e.preventDefault();
     if(e.which == 32) {
-      e.preventDefault();
       generatePath();
+    }
+    else if(e.which == 8){
+      undoPoint();
+    }
+    else if(e.which == 13){
+      e.preventDefault();
+      sendInformation();
     }
     else if(e.which == 87 || e.which == 119){
       changeType(TOP);
@@ -1038,18 +1091,6 @@ $(document).ready(function(e) {
     e.preventDefault();
     generatePath();
   });
-
-  function returnImage(){
-    values = {gid:$('#mainImage').attr("alt")};
-    $.ajax({
-      url: '/checkout',
-      type: 'POST',
-      data: JSON.stringify(values),
-      contentType: 'application/json; charset=utf-8',
-      dataType: 'json',
-      async: true
-    });
-  }
 
   $('#checkout').click(function(e){
     e.preventDefault();
@@ -1077,52 +1118,9 @@ $(document).ready(function(e) {
 
   $('#manualSubmit').click(function(e){
     e.preventDefault();
-    if(testing){
-	alert('This feature is undergoing testing please try again after an update');
-	return;
-    }
-    var updated = false;
-    if($('#markBad').is(":checked")){
-      var bad = confirm("Send Image as Marked Bad?");
-      if(bad){
-        var arr = { gid:$('#mainImage').attr("alt"),bad:true,done:false};
-        $.ajax({
-          url: '/path',
-          type: 'POST',
-          data: JSON.stringify(arr),
-          contentType: 'application/json; charset=utf-8',
-          dataType: 'json',
-          async: true
-        });
-        updated = true;
-      }
-    }
-    else{
-      var n_neighbors = getNumberOfNeighbors();
-      var done = $('#markDone').is(":checked");
-      var submit = confirm("Are you sure you want to submit this?");
-      var points = JSON.parse(JSON.stringify(linePoints));
-        if($('#pathtopInfo').length == 0) {
-          alert('Please Generate the Top Path First');
-        }
-        else{
-          if(submit){
-            sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints);
-            updated = true;
-          }
-        }
-    }
-    if(updated){
-      clearInfo();
-      $('#markDone').attr('checked', false);
-      $('#markBad').attr('checked',false);
-      $('#inputNeighbors').val('5');
-      $('#gradientInfo').remove();
-      $('#makePath').attr('class', 'btn btn-danger');
-      updateMainImage();
-      imageLoadCheck = setInterval(showIsLoaded, 500);
-    }
+    sendInformation();
   });
+
   $(window).bind('beforeunload',function(){
     return 'are you sure you want to leave?';
   });

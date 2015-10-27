@@ -81,6 +81,10 @@ img.displayed {
   border-color: red;
 }
 
+#notch.topControl{
+  border-color: #FFA500;
+}
+
 .bottomControl{
   position: absolute;
   width: 10px;
@@ -171,11 +175,3 @@ img.displayed {
   border-color: red;
 }
 
-.manualPath{
-  position: absolute;
-  border-style: solid;
-  border-width: 1px;
-  width: 2px;
-  height: 2px;
-  border-color: rgba(0,255,255,0.5)
-}

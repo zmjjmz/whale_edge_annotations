@@ -39,10 +39,10 @@ function isLeftPoint(lowerLeft, lowerRight, point){
   return leftDistance < rightDistance;
 }
 
-function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints){
+function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged){
   var topInfo = path = JSON.parse($('#pathtopInfo').text());
   topInfo['badPoints'] = badTopPoints;
-  var arr = { gid:$('#mainImage').attr("alt"),done:done, bad:false, topInfo:topInfo };
+  var arr = { gid:$('#mainImage').attr("alt"),done:done, bad:false, topInfo:topInfo,notch:notch,notchSubmerged:notchSubmerged };
   if($('#pathleftInfo').length != 0){
     var leftInfo = JSON.parse($('#pathleftInfo').text());
     leftInfo['badPoints'] = badLeftPoints;
@@ -457,7 +457,7 @@ $(document).ready(function(e) {
   const  LEFT = 'left';
   const  RIGHT = 'right';
 
-  const testing = true;
+  const testing = false;
   //Set the size of container to size of image
   var overlay = $("<div class=topControl><div>").hide().appendTo("body");
   var annotationOffset = overlay.width()/2;
@@ -492,6 +492,8 @@ $(document).ready(function(e) {
   var currentLine = [];
   var makeLine = false;
 
+  var labelingNotch = false;
+  var notch = [];
   var imageLoadCheck = setInterval(showIsLoaded, 500);
 
   function showIsLoaded(){
@@ -563,6 +565,9 @@ $(document).ready(function(e) {
     linePoints = [];
     linePath = [];
 
+    labelingNotch = false;
+    notch = [];
+
     counter = 0;
     id2List = [];
 
@@ -620,14 +625,17 @@ $(document).ready(function(e) {
     else{
       var n_neighbors = getNumberOfNeighbors();
       var done = $('#markDone').is(":checked");
+      var notchSubmerged = $('#notchSubmerged').is(":checked");
       var submit = confirm("Are you sure you want to submit this?");
-      var points = JSON.parse(JSON.stringify(linePoints));
-      if($('#pathtopInfo').length == 0) {
-        alert('Please Generate the Top Path First');
-      }
-      else{
-        if(submit){
-          sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints);
+      if(submit){     
+        if($('#pathtopInfo').length == 0) {
+          alert('Please Generate the Top Path First');
+        }
+        else if(notch.length == 0 && !notchSubmerged){
+          alert('Please Label the notch before submitting');
+        }
+        else{
+          sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged);
           updated = true;
         }
       }
@@ -873,6 +881,26 @@ $(document).ready(function(e) {
     changeType(BOTTOM);
   });
 
+  $('#labelNotch').click(function(e){
+    e.preventDefault();
+    labelingNotch = true;
+  });
+
+  $(document).on('click','.topControl',function(e){
+    if(labelingNotch){
+      if($('#notch').length != 0){
+        $('#notch').removeAttr('id');
+      }
+      var offset = $('.displayed').offset();
+      var point = $(this).offset();
+      var posX = point.left - offset.left;
+      var posY =  point.top - offset.top;
+      notch = floorPoint([posX,posY])
+      $(this).attr('id','notch');
+      labelingNotch = false;
+    }
+  });
+
   $('#badRegion').click(function(e) {
     e.preventDefault();
     placingBadRegion = true;
@@ -1061,7 +1089,6 @@ $(document).ready(function(e) {
   });
 
   $(document).keypress(function(e) {
-    e.preventDefault();
     if(e.which == 32) {
       generatePath();
     }

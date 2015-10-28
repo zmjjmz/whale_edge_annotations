@@ -458,6 +458,8 @@ $(document).ready(function(e) {
   const  RIGHT = 'right';
 
   const testing = false;
+
+  var defaultNeighbors = $('#inputNeighbors').val();
   //Set the size of container to size of image
   var overlay = $("<div class=topControl><div>").hide().appendTo("body");
   var annotationOffset = overlay.width()/2;
@@ -485,6 +487,11 @@ $(document).ready(function(e) {
   var rightPoints = [];
 
   var pointType = TOP;
+  var topNeighbors = defaultNeighbors;
+  var leftNeighbors = defaultNeighbors;
+  var rightNeighbors = defaultNeighbors;
+  var bottomNeighbors = defaultNeighbors;
+  
   var topLines = [];
   var bottomLines = [];
   var leftLines = [];
@@ -502,32 +509,52 @@ $(document).ready(function(e) {
       clearInterval(imageLoadCheck);
     }
   }
+  function storeNeighbor(){
+    var currentNeighborVal = $('#inputNeighbors').val();
+    if(pointType == TOP){
+      topNeighbors = currentNeighborVal;
+    }
+    else if(pointType == LEFT){
+      leftNeighbors = currentNeighborVal;
+    }
+    else if(pointType == RIGHT){
+      rightNeighbors = currentNeighborVal;
+    }
+    else if(pointType == BOTTOM){
+      bottomNeighbors = currentNeighborVal;
+    }
+  }
 
   function changeType(label){
+    storeNeighbor();
     pointType = label;
     if(pointType == TOP){
       $('#typeLeft').prop('checked', false);
       $('#typeRight').prop('checked', false);
       $('#typeBottom').prop('checked', false);
-      $('#typeTop').prop('checked', true)
+      $('#typeTop').prop('checked', true);
+      $('#inputNeighbors').val(topNeighbors.toString());
     }
     else if(pointType == BOTTOM){
       $('#typeLeft').prop('checked', false);
       $('#typeRight').prop('checked', false);
       $('#typeBottom').prop('checked', true);
       $('#typeTop').prop('checked', false);
+      $('#inputNeighbors').val(bottomNeighbors.toString());
     }
     else if(pointType == LEFT){
       $('#typeLeft').prop('checked', true);
       $('#typeRight').prop('checked', false);
       $('#typeBottom').prop('checked', false);
       $('#typeTop').prop('checked', false);
+      $('#inputNeighbors').val(leftNeighbors.toString());
     }
     else if(pointType == RIGHT){
       $('#typeLeft').prop('checked', false);
       $('#typeRight').prop('checked', true);
       $('#typeBottom').prop('checked', false);
       $('#typeTop').prop('checked', false);
+      $('#inputNeighbors').val(rightNeighbors.toString());
     }
   }
 
@@ -579,6 +606,10 @@ $(document).ready(function(e) {
 
     resetBoundingLines();
     pointType = TOP;
+    topNeighbors = defaultNeighbors;
+    leftNeighbors = defaultNeighbors;
+    rightNeighbors = defaultNeighbors;
+    bottomNeighbors = defaultNeighbors;
     $('#pathtopInfo').remove();
     $('#pathleftInfo').remove();
     $('#pathrightInfo').remove();
@@ -599,6 +630,8 @@ $(document).ready(function(e) {
     $('#typeRight').prop('checked', false);
     $('#typeBottom').prop('checked', false);
     $('#typeTop').prop('checked', true);
+    $('#manualSubmit').blur();
+    $('#inputNeighbors').val(defaultNeighbors.toString());
   }
 
   function sendInformation(){
@@ -644,7 +677,6 @@ $(document).ready(function(e) {
       clearInfo();
       $('#markDone').attr('checked', false);
       $('#markBad').attr('checked',false);
-      $('#inputNeighbors').val('5');
       $('#gradientInfo').remove();
       $('#makePath').attr('class', 'btn btn-danger');
       updateMainImage();
@@ -834,6 +866,9 @@ $(document).ready(function(e) {
       }
       else if(classId == 'bottomControl'){
 	      bottomPoints.pop();
+      }
+      if($("[id2="+id+"]").attr('id') == 'notch'){
+        notch = [];
       }
       $("[id2="+id+"]").remove();
     }
@@ -1054,7 +1089,7 @@ $(document).ready(function(e) {
             }
           }
           if(change){
-	          img = $('<div class='+region+'>');
+	    img = $('<div class='+region+'>');
             img.css('top', offset.top + path[i][1]);
             img.css('left', path[i][0] + offset.left);
             img.appendTo('#container');
@@ -1137,8 +1172,8 @@ $(document).ready(function(e) {
     $('#gradientInfo').remove();
     $('#markDone').attr('checked', false);
     $('#markBad').attr('checked',false);
-    $('#inputNeighbors').val('5');
     $('#makePath').attr('class', 'btn btn-danger');
+    $('#skipImg').blur();
     updateMainImage();
     imageLoadCheck = setInterval(showIsLoaded, 500);
   });

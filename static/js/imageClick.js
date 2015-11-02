@@ -10,6 +10,11 @@ function zeros(dimensions){
   return array;
 }
 
+function getDistance(pt1, pt2){
+  var difference = Math.pow(pt1[0]-pt2[0],2) + Math.pow(pt1[1] - pt2[1],2);
+  return Math.sqrt(difference);
+}
+
 function getMaxAngle(points,orientation){
   if(orientation == 'vertical'){
     points  = points.sort(function(a,b){return a[1] - b[1]});
@@ -456,7 +461,7 @@ $(document).ready(function(e) {
   const BOTTOM = 'bottom';
   const  LEFT = 'left';
   const  RIGHT = 'right';
-
+  const DISTANCE_EPSILON = 3;
   const testing = false;
 
   var defaultNeighbors = $('#inputNeighbors').val();
@@ -558,6 +563,32 @@ $(document).ready(function(e) {
     }
   }
 
+  function markNotch(){
+    if($('#notch').length != 0){
+      $('#notch').removeAttr('id');
+      notch = [];
+    }
+    if(linePoints.length > 2){
+      labelingNotch = true;
+      var points = JSON.parse(JSON.stringify(linePoints));
+      points = points.sort(function(a,b){return a[0] - b[0]});
+      var middle = points[Math.floor(points.length/2)];
+      notch = middle;
+      var offset = $('.displayed').offset();
+      $('.topControl').each(function(){
+        var val = floorPoint([$(this).offset().left - offset.left + annotationOffset, $(this).offset().top - offset.top + annotationOffset]);
+	if(getDistance(val,middle) < DISTANCE_EPSILON ){
+          $(this).attr('id', 'notch');
+	  return;
+        }
+      });
+    }
+    else{
+      alert('Need at least 2 points labeled to mark notch');
+      return;
+    }
+  }
+
   function resetBadRegions(){
     badPlaced = 0;
     badLeftPoints = [];
@@ -632,6 +663,7 @@ $(document).ready(function(e) {
     $('#typeTop').prop('checked', true);
     $('#manualSubmit').blur();
     $('#inputNeighbors').val(defaultNeighbors.toString());
+    $('#notchSubmerged').attr('checked',false);
   }
 
   function sendInformation(){
@@ -677,6 +709,7 @@ $(document).ready(function(e) {
       clearInfo();
       $('#markDone').attr('checked', false);
       $('#markBad').attr('checked',false);
+      $('#notchSubmerged').attr('checked',false);
       $('#gradientInfo').remove();
       $('#makePath').attr('class', 'btn btn-danger');
       updateMainImage();
@@ -918,7 +951,7 @@ $(document).ready(function(e) {
 
   $('#labelNotch').click(function(e){
     e.preventDefault();
-    labelingNotch = true;
+    markNotch();
   });
 
   $(document).on('click','.topControl',function(e){
@@ -1172,6 +1205,7 @@ $(document).ready(function(e) {
     $('#gradientInfo').remove();
     $('#markDone').attr('checked', false);
     $('#markBad').attr('checked',false);
+    $('#notchSubmerged').attr('checked',false);
     $('#makePath').attr('class', 'btn btn-danger');
     $('#skipImg').blur();
     updateMainImage();

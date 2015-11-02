@@ -1,3 +1,15 @@
+//GLOBAL CONSTANT VARIABLES
+const  SEAM = "seam";
+const MANUAL = "manual";
+const TOP = 'top';
+const BOTTOM = 'bottom';
+const  LEFT = 'left';
+const  RIGHT = 'right';
+const VERTICAL = 'vertical';
+const HORIZONTAL = 'horizontal';
+const DISTANCE_EPSILON = 3;
+const testing = false;
+
 /**
 *dimesnsions is an array with the dimesnsions
 *returns matrix of zeros with given dimensions
@@ -10,13 +22,21 @@ function zeros(dimensions){
   return array;
 }
 
+/**
+*Function to find the euclidean distance between points
+*Returns the distance between the points
+*/
 function getDistance(pt1, pt2){
   var difference = Math.pow(pt1[0]-pt2[0],2) + Math.pow(pt1[1] - pt2[1],2);
   return Math.sqrt(difference);
 }
 
+/**
+*Finds the maximum angle between adjacent points
+*Takes a list of points and the direction the line will travel
+*/
 function getMaxAngle(points,orientation){
-  if(orientation == 'vertical'){
+  if(orientation == VERTICAL){
     points  = points.sort(function(a,b){return a[1] - b[1]});
   }
   else{
@@ -24,26 +44,22 @@ function getMaxAngle(points,orientation){
   }
   var maxAngle = 0;
   for(var i = 1; i < points.length; i++){
-    diffY = points[i][1] - points[i-1][1];
-    diffX =  points[i][0] - points[i-1][0];
-    angle = Math.atan2(diffY,diffX)
-    if(orientation == 'vertical'){
+    var diffY = points[i][1] - points[i-1][1];
+    var diffX =  points[i][0] - points[i-1][0];
+    var angle = Math.atan2(diffY,diffX)
+    if(orientation == VERTICAL){
       angle = Math.atan2(diffX,diffY);
     }
     if(maxAngle < Math.abs(angle)){
-	maxAngle = Math.abs(angle);
+	    maxAngle = Math.abs(angle);
     }
   }
   return maxAngle;
 }
 
-
-function isLeftPoint(lowerLeft, lowerRight, point){
-  var leftDistance = Math.sqrt(Math.pow(lowerLeft[0]-point[0],2) + Math.pow(lowerLeft[1]-point[1],2));
-  var rightDistance = Math.sqrt(Math.pow(lowerRight[0]-point[0],2) + Math.pow(lowerRight[1]-point[1],2));
-  return leftDistance < rightDistance;
-}
-
+/**
+* Sends annotation information to server
+*/
 function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged){
   var topInfo = path = JSON.parse($('#pathtopInfo').text());
   topInfo['badPoints'] = badTopPoints;
@@ -83,9 +99,11 @@ function floorPoint(pt){
   point.push(Math.floor(pt[1]));
   return point;
 }
-
+/**
+*Function to draw point on display
+*Takes a point array and id and id2 as arguments
+*/
 function displayIdPoint(point,id, id2){
-
   var overlay = $("<div class=topControl><div>").hide().appendTo("body");
   var annotationOffset = overlay.width()/2;
   overlay.remove();
@@ -105,7 +123,10 @@ function displayIdPoint(point,id, id2){
   img.appendTo('#container');
 }
 
-
+/**
+* Takes a list of points and draws the points on the image
+*Takes path, the type of the path, and whether to remove the old path
+*/
 function displayPath(path,type,remove){
   if(remove){
     $('.'+type+'Path').remove();
@@ -171,7 +192,7 @@ function setPassThroughVertical(gradient,pt){
 }
 
 function lineAdjustment(gradient,path,type){
-  if(type == 'top'){
+  if(type == TOP){
     for(var i = 0; i < path.length; i++){
       var point = path[i];
       for(var j = point[1]; j < gradient.length; j++){
@@ -179,7 +200,7 @@ function lineAdjustment(gradient,path,type){
       }
     }
   }
-  else if(type == 'bottom'){
+  else if(type == BOTTOM){
     for(var i = 0; i < path.length; i++){
       var point = path[i];
       for(var j = point[1]; j >= 0; j--){
@@ -196,7 +217,7 @@ function lineAdjustment(gradient,path,type){
       }
     }
   }
-  else if(type == 'right'){
+  else if(type == RIGHT){
     for(var i = 0; i < path.length; i++){
       var point = path[i];
       for(var j = point[0]; j >= 0; j--){
@@ -209,7 +230,7 @@ function lineAdjustment(gradient,path,type){
 
 function getCost(row, col, i, gradient_y_image, cost,side){
   var multiplier = 1.0;
-  if(side == 'bottom'){
+  if(side == BOTTOM){
     multiplier = -1.0;
   }
   if(row + i < 0 || row+i >= gradient_y_image.length){
@@ -226,7 +247,7 @@ function getCost(row, col, i, gradient_y_image, cost,side){
 
 function getCostVertical(row, col, i, gradient, cost,side){
   var multiplier = 1.0;
-  if(side == 'left'){
+  if(side == LEFT){
     multiplier = -1.0;
   }
   if(col + i < 0 || col+i >= gradient[0].length){
@@ -244,7 +265,7 @@ function getCostVertical(row, col, i, gradient, cost,side){
 function getCandidates(row, col, gradient_y_image, cost, neighbor_range,orientation,side){
 var candidates = [];
   for(var i = 0; i < neighbor_range.length; i++){
-    if(orientation == 'horizontal'){
+    if(orientation == HORIZONTAL){
       candidates.push(getCost(row,col,neighbor_range[i],gradient_y_image,cost,side));
     }
     else{
@@ -289,7 +310,7 @@ function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side){
 
   for(var row = start[1]; row < end[1] + 1; row++){
     for(var col = 0; col < gradient[0].length; col++){
-      candidates = getCandidates(row, col, gradient, cost, neighbor_range,'vertical',side);
+      candidates = getCandidates(row, col, gradient, cost, neighbor_range,VERTICAL,side);
       var best = argMax(candidates);
       back[row][col] = best - Math.floor(n_neighbors / 2);
       cost[row][col] =  candidates[best];
@@ -339,7 +360,7 @@ function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side){
 
   for(var col = start[0]; col < end[0] + 1; col++){
     for(var row = 0; row < yGradient.length; row++){
-      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,'horizontal',side);
+      candidates = getCandidates(row, col, yGradient, cost, neighbor_range,HORIZONTAL,side);
       var best = argMax(candidates);
       back[row][col] = best - Math.floor(n_neighbors / 2);
       cost[row][col] =  candidates[best];
@@ -398,7 +419,7 @@ function initailizeData(data){
     }
   }
   else{
-    if(data.hasOwnProperty('left')){
+    if(data.hasOwnProperty(LEFT)){
       displayIdPoint(data.left,'start',counter);
       id2List.push(counter);
       counter += 1;
@@ -455,14 +476,6 @@ function getNumberOfNeighbors(){
 }
 
 $(document).ready(function(e) {
-  const  SEAM = "seam";
-  const MANUAL = "manual";
-  const TOP = 'top';
-  const BOTTOM = 'bottom';
-  const  LEFT = 'left';
-  const  RIGHT = 'right';
-  const DISTANCE_EPSILON = 3;
-  const testing = false;
 
   var defaultNeighbors = $('#inputNeighbors').val();
   //Set the size of container to size of image
@@ -496,7 +509,7 @@ $(document).ready(function(e) {
   var leftNeighbors = defaultNeighbors;
   var rightNeighbors = defaultNeighbors;
   var bottomNeighbors = defaultNeighbors;
-  
+
   var topLines = [];
   var bottomLines = [];
   var leftLines = [];
@@ -563,7 +576,18 @@ $(document).ready(function(e) {
     }
   }
 
+  function initInfo(){
+    if($('#initInfo').length != 0) {
+      linePoints = JSON.parse($('#initInfo').text());
+      id2List = JSON.parse($('#idList').text());
+      counter = id2List.length;
+      $('#initInfo').remove();
+      $('#idList').remove();
+    }
+  }
+
   function markNotch(){
+    initInfo();
     if($('#notch').length != 0){
       $('#notch').removeAttr('id');
       notch = [];
@@ -577,14 +601,14 @@ $(document).ready(function(e) {
       var offset = $('.displayed').offset();
       $('.topControl').each(function(){
         var val = floorPoint([$(this).offset().left - offset.left + annotationOffset, $(this).offset().top - offset.top + annotationOffset]);
-	if(getDistance(val,middle) < DISTANCE_EPSILON ){
-          $(this).attr('id', 'notch');
-	  return;
+        if(getDistance(val,middle) < DISTANCE_EPSILON ){
+            $(this).attr('id', 'notch');
+	          return;
         }
       });
     }
     else{
-      alert('Need at least 2 points labeled to mark notch');
+      alert('Need at least 2 points labeled to mark notch!');
       return;
     }
   }
@@ -692,7 +716,7 @@ $(document).ready(function(e) {
       var done = $('#markDone').is(":checked");
       var notchSubmerged = $('#notchSubmerged').is(":checked");
       var submit = confirm("Are you sure you want to submit this?");
-      if(submit){     
+      if(submit){
         if($('#pathtopInfo').length == 0) {
           alert('Please Generate the Top Path First');
         }
@@ -718,13 +742,7 @@ $(document).ready(function(e) {
   }
 
   function generatePath(){
-    if($('#initInfo').length != 0) {
-      linePoints = JSON.parse($('#initInfo').text());
-      id2List = JSON.parse($('#idList').text());
-      counter = idList.length;
-      $('#initInfo').remove();
-      $('#idList').remove();
-    }
+    initInfo();
 
     if(linePoints.length >= 2){
       if($('#gradientInfo').length == 0){
@@ -751,16 +769,16 @@ $(document).ready(function(e) {
           var lPoints = JSON.parse(JSON.stringify(leftPoints));
 	        lPoints.push(points[0]);
           if(type == SEAM){
-            var maxLeftAngle = getMaxAngle(lPoints, 'vertical');
+            var maxLeftAngle = getMaxAngle(lPoints, VERTICAL);
             if(maxLeftAngle > neighborAngle){
         	    alert("Slope of Plotted points exceeds neighbor range! Left");
           	  return;
        	    }
-            setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,'left'),0);
+            setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,LEFT),0);
           }
           else{//MANUAL
             linePath = getLinearPath(lPoints);
-            displayPath(linePath,'left',true);
+            displayPath(linePath,LEFT,true);
             var pathData = {path:linePath,linePoints:lPoints,type:'manual'};
             pathData = JSON.stringify(pathData);
             //Removing previous data
@@ -782,16 +800,16 @@ $(document).ready(function(e) {
             var rPoints = JSON.parse(JSON.stringify(rightPoints));
             rPoints.push(points[points.length -1]);
             if(type == SEAM){
-              var maxRightAngle = getMaxAngle(rPoints,'vertical');
+              var maxRightAngle = getMaxAngle(rPoints,VERTICAL);
               if(maxRightAngle > neighborAngle){
                   alert("Slope of Plotted points exceeds neighbor range! Right");
                   return;
               }
-              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,'right'),0);
+              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,RIGHT),0);
             }
             else{//MANUAL
               linePath = getLinearPath(rPoints);
-              displayPath(linePath,'right',true);
+              displayPath(linePath,RIGHT,true);
 	            var pathData = {path:linePath,linePoints:rPoints,type:'manual'};
               pathData = JSON.stringify(pathData);
               //Removing previous data
@@ -805,16 +823,16 @@ $(document).ready(function(e) {
         }
         else if(pointType == TOP){
           if(type == SEAM){
-            var maxAngle = getMaxAngle(points,'horizontal');
+            var maxAngle = getMaxAngle(points,HORIZONTAL);
             if(maxAngle > neighborAngle){
               alert("Slope of Plotted points exceeds neighbor range! Top");
               return;
             }
-            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,'top'), 0 );
+            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,TOP), 0 );
           }
           else{//MANUAL
             linePath = getLinearPath(points);
-            displayPath(linePath,'top',true);
+            displayPath(linePath,TOP,true);
             var pathData = {path:linePath,linePoints:points,type:'manual'};
             pathData = JSON.stringify(pathData);
             //Removing previous data
@@ -838,16 +856,16 @@ $(document).ready(function(e) {
           bPoints.push(rPoints[rPoints.length - 1]);
           bPoints.push(lPoints[lPoints.length - 1]);
           if(type == SEAM){
-            var maxAngle = getMaxAngle(bPoints,'horizontal');
+            var maxAngle = getMaxAngle(bPoints,HORIZONTAL);
             if(maxAngle > neighborAngle){
               alert("Slope of Plotted points exceeds neighbor range! Bottom");
               return;
             }
-            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,'bottom'), 0 );
+            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,BOTTOM), 0 );
           }
           else{//MANUAL
             linePath = getLinearPath(bPoints);
-            displayPath(linePath,'bottom',true);
+            displayPath(linePath,BOTTOM,true);
 	          var pathData = {path:linePath,linePoints:bPoints,type:'manual'};
             pathData = JSON.stringify(pathData);
             //Removing previous data
@@ -877,13 +895,7 @@ $(document).ready(function(e) {
   }
 
   function undoPoint(){
-    if($('#initInfo').length != 0) {
-      linePoints = JSON.parse($('#initInfo').text());
-      id2List = JSON.parse($('#idList').text());
-      counter = id2List.length;
-      $('#initInfo').remove();
-      $('#idList').remove();
-    }
+    initInfo();
     if(id2List.length > 0){
       id = id2List[id2List.length-1];
       id2List.pop();
@@ -1009,13 +1021,7 @@ $(document).ready(function(e) {
 
   $('.displayed').click(function(e) {
     var offset = $('.displayed').offset();
-    if($('#initInfo').length != 0) {
-      linePoints = JSON.parse($('#initInfo').text());
-      id2List = JSON.parse($('#idList').text());
-      counter = id2List.length;
-      $('#initInfo').remove();
-      $('#idList').remove();
-    }
+    initInfo();
     var posX = e.pageX - offset.left,posY = e.pageY - offset.top;
     var img;
     var add = true;
@@ -1122,7 +1128,7 @@ $(document).ready(function(e) {
             }
           }
           if(change){
-	    img = $('<div class='+region+'>');
+            img = $('<div class='+region+'>');
             img.css('top', offset.top + path[i][1]);
             img.css('left', path[i][0] + offset.left);
             img.appendTo('#container');
@@ -1155,31 +1161,44 @@ $(document).ready(function(e) {
     img.css('left',e.pageX-annotationOffset);
     img.appendTo('#container');
   });
-
+  //Handler for keybindings
   $(document).keypress(function(e) {
-    if(e.which == 32) {
+    var input = e.which;
+    //Spacebar for generate path
+    if(input == 32) {
       generatePath();
-    }
-    else if(e.which == 8){
+    }//z for undo point
+    else if(input == 122 || input== 90){
       undoPoint();
-    }
-    else if(e.which == 13){
+    }//Enter for send information
+    else if(input == 13){
       e.preventDefault();
       sendInformation();
-    }
-    else if(e.which == 87 || e.which == 119){
+    }//q for mark notch
+    else if(input == 81 || input == 113){
+      markNotch();
+    }//w for change mode to top
+    else if(input == 87 || input == 119){
       changeType(TOP);
-    }
-    else if(e.which == 65 || e.which == 97){
+    }//a for change mode to left
+    else if(input == 65 || input == 97){
       changeType(LEFT);
-    }
-    else if(e.which == 83 || e.which == 115){
+    }//s for change mode to bottom
+    else if(input == 83 || input == 115){
       changeType(BOTTOM);
-    }
-    else if(e.which == 68 || e.which == 100){
+    }//d for change mode to right
+    else if(input == 68 || input == 100){
       changeType(RIGHT);
+    }//e to mark an image as done
+    else if(input == 101 || input == 69){
+      $('#markDone').attr('checked', true);
+    }//r to make an image as bad
+    else if(input == 114 || input == 82){
+      $('#markBad').attr('checked',true);
+    }//t to mark notch submerged
+    else if(input == 116 || input == 84){
+      $('#notchSubmerged').attr('checked',true);
     }
-    console.log(e.which);
   });
 
   $('#makePath').click(function(e){
@@ -1194,6 +1213,7 @@ $(document).ready(function(e) {
       returnImage();
       $('#mainImage').remove();
       clearInfo();
+      $('.form-horizontal').remove();
       $('#container').append('<h2>Checked out</h2>');
     }
   });
@@ -1216,7 +1236,7 @@ $(document).ready(function(e) {
     e.preventDefault();
     sendInformation();
   });
-
+  //To warn user that they are leaving page so they sign out
   $(window).bind('beforeunload',function(){
     return 'are you sure you want to leave?';
   });

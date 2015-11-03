@@ -1,0 +1,4 @@
+flask
+numpy
+ibeis
+cv2

@@ -1,0 +1,193 @@
+img.displayed {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1pt;
+    z-index: initial;
+}
+
+
+#container img.point {
+    position: absolute;
+}
+
+.badRegionPoint{
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #7CFC00;
+}
+
+.badTopRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
+
+.badBottomRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
+.badRightRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
+.badLeftRegion{
+  position: absolute;
+  border-style: solid;
+  width : 2px;
+  height: 2px;
+  border-width: 2px;
+  border-color: black;
+}
+.leftControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #7F00FF;
+}
+
+
+.rightControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #FF05FF;
+}
+
+.topControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: red;
+}
+
+#notch.topControl{
+  border-color: #FFA500;
+}
+
+.bottomControl{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #ADFF2F;
+}
+
+.badLinePoint{
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #A0002F;
+}
+
+.badLineTPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #AD002F;
+}
+
+.badLineBPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #00FF2F;
+}
+
+.badLineLPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #A2CC2A;
+}
+
+.badLineRPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #CC11FC;
+}
+
+.bottomPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #ADFF2F;
+}
+
+.leftPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #7F00FF;
+}
+
+.rightPath{
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #FF00FF;
+}
+
+.topPath{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  width: 2px;
+  height: 2px;
+  border-color: red;
+}
+
+.ignoreRegionPoint{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  width: 10px;
+  height: 10px;
+  border-color: #00FF00;
+}
+
+.ignoredRegion{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #00FF00;
+  background-color: rgba(0,255,0,.5);
+}

@@ -1,0 +1,109 @@
+{% extends 'layout.html' %}
+{% block title %}Point Annotation{% endblock %}
+{% block content %}
+
+<form class="form-horizontal">
+  <fieldset>
+    <legend>Options</legend>
+    <div class="form-group">
+      <label for="neighbors" class="col-lg-2 control-label">n_neighbors</label>
+      <div class="col-lg-2">
+        <input class="form-control" id="inputNeighbors" value="5" step="2" min="1" type="number">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-lg-2 control-label">Mode</label>
+      <div class="col-lg-10">
+        <div class="radio">
+          <label>
+            <input name="optionsRadios" id="optionsRadios1" value="option1" checked="" type="radio">
+            Seam Carving
+          </label>
+        </div>
+        <div class="radio">
+          <label>
+            <input name="optionsRadios" id="optionsRadios2" value="option2" type="radio">
+            Manual
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-lg-2 control-label">Annotation Location</label>
+      <div class="col-lg-1">
+        <div class="radio" title='w'>
+          <label>
+            <input name="typesRadios" id="typeTop" value="option1" checked="" type="radio">
+            Top
+          </label>
+        </div>
+        <div class="radio" title='a'>
+          <label>
+            <input name="typesRadios" id="typeLeft" value="option2" type="radio">
+            Left
+          </label>
+        </div>
+      </div>
+      <div class="col-lg-2">
+	<div class="radio" title='d'>
+          <label>
+            <input name="typesRadios" id="typeRight" value="option3" type="radio">
+            Right
+          </label>
+        </div>
+        <div class="radio" title='s'>
+          <label>
+            <input name="typesRadios" id="typeBottom" value="optio4" type="radio">
+            Bottom
+          </label>
+        </div>
+      </div>
+      <div class="col-lg 2">
+        <input title='e' type="checkbox"id="markDone"> Mark Done
+        <input title='r' type="checkbox"id="markBad"> Mark Bad Image
+      </div>
+      <div class="col-lg 7">
+        <input title='t' type="checkbox"id="notchSubmerged"> Notch Submerged
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="col-lg-10 col-lg-offset-2">
+        <button  id="resetState" class="btn btn-warning">Reset</button>
+        <button  id="undoPoint" class="btn btn-primary" title='z'>Undo Point</button>
+        <button  id="labelNotch" class="btn btn-primary" title='q'>Label Notch</button>
+        <button  id="makePath" class="btn btn-danger" title='spacebar'>Make Path</button>
+        <button  id="togglePath" class="btn btn-primary">Toggle Path</button>
+        <button  id="skipImg" class="btn btn-primary">Skip Image</button>
+        <button  id="manualSubmit" class="btn btn-success" title='enter'>Submit</button>
+        <button  id="checkout" class="btn btn-danger">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="col-lg-10 col-lg-offset-2">
+      	<button  id="badRegion" class="btn btn-primary">Mark Bad Region</button>
+      	<button  id="toggleBadRegions" class="btn btn-primary">Toggle Regions</button>
+      	<button  id="resetBadRegions" class="btn btn-primary">Reset Regions</button>
+        <button  id="badLineMake" class="btn btn-primary">Make Interior Bound</button>
+        <button  id="clearBadLines" class="btn btn-primary">Clear Bounds</button>
+	<button  id="makeIgnoreRegion" class="btn btn-primary" >Mark Ignore Region</button>
+	<button  id="clearIgnoreRegion" class="btn btn-primary">Clear Ignore</button>
+     </div>
+   </div>
+
+  </fieldset>
+</form>
+
+
+<div id=container>
+  <img id="mainImage" class ="displayed" src="" alt="" >
+</div>
+
+
+
+<script src="/static/js/jquery-2.1.4.min.js"></script>
+<script src="/static/js/bootstrap.min.js"></script>
+<script src="/static/js/imageClick.js"></script>
+{% endblock %}

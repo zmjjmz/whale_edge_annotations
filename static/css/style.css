@@ -174,3 +174,20 @@ img.displayed {
   height: 2px;
   border-color: red;
 }
+
+.ignoreRegionPoint{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  width: 10px;
+  height: 10px;
+  border-color: #00FF00;
+}
+
+.ignoredRegion{
+  position: absolute;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #00FF00;
+  background-color: rgba(0,255,0,.5);
+}

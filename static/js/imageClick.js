@@ -1,10 +1,10 @@
 //GLOBAL CONSTANT VARIABLES
-const  SEAM = "seam";
+const SEAM = "seam";
 const MANUAL = "manual";
 const TOP = 'top';
 const BOTTOM = 'bottom';
-const  LEFT = 'left';
-const  RIGHT = 'right';
+const LEFT = 'left';
+const RIGHT = 'right';
 const VERTICAL = 'vertical';
 const HORIZONTAL = 'horizontal';
 const DISTANCE_EPSILON = 3;
@@ -60,10 +60,10 @@ function getMaxAngle(points,orientation){
 /**
 * Sends annotation information to server
 */
-function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged){
+function sendPath(done, badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged,ignoredRegions){
   var topInfo = path = JSON.parse($('#pathtopInfo').text());
   topInfo['badPoints'] = badTopPoints;
-  var arr = { gid:$('#mainImage').attr("alt"),done:done, bad:false, topInfo:topInfo,notch:notch,notchSubmerged:notchSubmerged };
+  var arr = { gid:$('#mainImage').attr("alt"),done:done, bad:false, topInfo:topInfo,notch:notch,notchSubmerged:notchSubmerged,ignoredRegions:ignoredRegions };
   if($('#pathleftInfo').length != 0){
     var leftInfo = JSON.parse($('#pathleftInfo').text());
     leftInfo['badPoints'] = badLeftPoints;
@@ -191,6 +191,16 @@ function setPassThroughVertical(gradient,pt){
   return gradient;
 }
 
+function setIgnoredArea(gradient, region){
+  var point = region.point;
+  for(var i = 0; i < region.height; i++){
+    for(var j = 0; j < region.width; j++){
+      gradient[point[1] + i][point[0] + j] = Number.NEGATIVE_INFINITY;
+    }
+  }
+  return gradient;
+}
+
 function lineAdjustment(gradient,path,type){
   if(type == TOP){
     for(var i = 0; i < path.length; i++){
@@ -287,7 +297,7 @@ function argMax(candidates){
   return maxIndex;
 }
 
-function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side){
+function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side,ignoredRegions){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
     return;
@@ -305,6 +315,11 @@ function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side){
   for(var i = 0; i < lines.length; i++){
     gradient = lineAdjustment(gradient,getLinearPath(lines[i]),side)
   }
+
+  for(var i = 0; i < ignoredRegions.length; i++){
+    gradient = setIgnoredArea(gradient, ignoredRegions[i]);
+  }
+
   var cost = zeros([gradient.length, gradient[0].length ])
   var back = zeros([gradient.length, gradient[0].length ])
 
@@ -336,7 +351,7 @@ function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side){
   info.appendTo('body');
 }
 
-function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side){
+function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side,ignoredRegions){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
     return;
@@ -354,6 +369,9 @@ function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side){
 
   for(var i = 0; i < lines.length; i++){
    yGradient = lineAdjustment(yGradient,getLinearPath(lines[i]),side)
+  }
+  for(var i = 0; i < ignoredRegions.length; i++){
+    yGradient = setIgnoredArea(yGradient, ignoredRegions[i]);
   }
   var cost = zeros([yGradient.length, yGradient[0].length ])
   var back = zeros([yGradient.length, yGradient[0].length ])
@@ -519,7 +537,21 @@ $(document).ready(function(e) {
 
   var labelingNotch = false;
   var notch = [];
+
+  var ignoreLabel = [];
+  var ignoredRegions = [];
+  var labelIgnore = false;  
+
+
   var imageLoadCheck = setInterval(showIsLoaded, 500);
+  
+  function clearIgnoredRegions(){
+    ignoreLabel = [];
+    ignoredRegions = [];
+    labelIgnore = false;
+    $('.ignoreRegionPoint').remove();
+    $('.ignoredRegion').remove();
+  }  
 
   function showIsLoaded(){
     if($('#gradientInfo').length != 0){
@@ -658,6 +690,8 @@ $(document).ready(function(e) {
     bottomPoints = [];
     leftPoints = [];
     rightPoints = [];
+    
+    clearIgnoredRegions();    
 
     resetBoundingLines();
     pointType = TOP;
@@ -692,8 +726,8 @@ $(document).ready(function(e) {
 
   function sendInformation(){
     if(testing){
-	    alert('This feature is undergoing testing please try again after an update');
-	    return;
+      alert('This feature is undergoing testing please try again after an update');
+      return;
     }
     var updated = false;
     if($('#markBad').is(":checked")){
@@ -724,7 +758,7 @@ $(document).ready(function(e) {
           alert('Please Label the notch before submitting');
         }
         else{
-          sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged);
+          sendPath(done,badTopPoints,badBottomPoints,badLeftPoints,badRightPoints, notch, notchSubmerged,ignoredRegions);
           updated = true;
         }
       }
@@ -774,7 +808,7 @@ $(document).ready(function(e) {
         	    alert("Slope of Plotted points exceeds neighbor range! Left");
           	  return;
        	    }
-            setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,LEFT),0);
+            setTimeout(find_seam_vertical(values.gradientX,lPoints,leftLines,n_neighbors,LEFT,ignoredRegions),0);
           }
           else{//MANUAL
             linePath = getLinearPath(lPoints);
@@ -805,7 +839,7 @@ $(document).ready(function(e) {
                   alert("Slope of Plotted points exceeds neighbor range! Right");
                   return;
               }
-              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,RIGHT),0);
+              setTimeout(find_seam_vertical(values.gradientX,rPoints,rightLines,n_neighbors,RIGHT,ignoredRegions),0);
             }
             else{//MANUAL
               linePath = getLinearPath(rPoints);
@@ -828,7 +862,7 @@ $(document).ready(function(e) {
               alert("Slope of Plotted points exceeds neighbor range! Top");
               return;
             }
-            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,TOP), 0 );
+            setTimeout(find_seam_horizontal(values.gradient,points, topLines,n_neighbors,TOP,ignoredRegions), 0 );
           }
           else{//MANUAL
             linePath = getLinearPath(points);
@@ -861,12 +895,12 @@ $(document).ready(function(e) {
               alert("Slope of Plotted points exceeds neighbor range! Bottom");
               return;
             }
-            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,BOTTOM), 0 );
+            setTimeout(find_seam_horizontal(values.gradient,bPoints,bottomLines ,n_neighbors,BOTTOM,ignoredRegions), 0 );
           }
           else{//MANUAL
             linePath = getLinearPath(bPoints);
             displayPath(linePath,BOTTOM,true);
-	          var pathData = {path:linePath,linePoints:bPoints,type:'manual'};
+	    var pathData = {path:linePath,linePoints:bPoints,type:'manual'};
             pathData = JSON.stringify(pathData);
             //Removing previous data
             $('#pathbottomInfo').remove();
@@ -892,6 +926,21 @@ $(document).ready(function(e) {
       dataType: 'json',
       async: true
     });
+  }
+
+  function togglePath(){ 
+    if(pointType == TOP){
+      $('.topPath').toggle();
+    }
+    else if (pointType == BOTTOM) {
+      $('.bottomPath').toggle();
+    }
+    else if (pointType == LEFT) {
+      $('.leftPath').toggle();
+    }
+    else if (pointType == RIGHT){
+      $('.rightPath').toggle();
+    }
   }
 
   function undoPoint(){
@@ -923,18 +972,7 @@ $(document).ready(function(e) {
 
   $('#togglePath').click(function(e){
     e.preventDefault();
-    if(pointType == TOP){
-      $('.topPath').toggle();
-    }
-    else if (pointType == BOTTOM) {
-      $('.bottomPath').toggle();
-    }
-    else if (pointType == LEFT) {
-      $('.leftPath').toggle();
-    }
-    else if (pointType == RIGHT){
-      $('.rightPath').toggle();
-    }
+    togglePath();   
   });
 
   $('#optionsRadios1').click(function(e) {
@@ -1019,6 +1057,16 @@ $(document).ready(function(e) {
     clearInfo();
   });
 
+  $('#clearIgnoreRegion').click(function(e){
+    e.preventDefault();
+    clearIgnoredRegions();
+  });
+
+  $('#makeIgnoreRegion').click(function(e){
+    e.preventDefault();
+    labelIgnore = true;
+  });
+
   $('.displayed').click(function(e) {
     var offset = $('.displayed').offset();
     initInfo();
@@ -1026,6 +1074,42 @@ $(document).ready(function(e) {
     var img;
     var add = true;
     var img = [];
+
+
+    if(labelIgnore){
+      /*
+ignoreLabel = [];
+    ignoredRegions = [];
+    labelIgnore = false;
+    $('.ignoreRegionPoint').remove();
+    $('.ignoredRegion').remove();
+      */
+      if(ignoreLabel.length == 0){
+        img = $('<div class=ignoreRegionPoint>');
+        img.css('top', e.pageY-annotationOffset);
+        img.css('left',e.pageX-annotationOffset);
+        img.appendTo('#container');
+        ignoreLabel.push(floorPoint([posX,posY])); 
+      }
+      else{
+        labelIgnore = false;
+        ignoreLabel.push(floorPoint([posX,posY]));
+        var wide = Math.abs(ignoreLabel[1][0] - ignoreLabel[0][0]);
+        var high = Math.abs(ignoreLabel[1][1] - ignoreLabel[0][1]);
+        img = $('<div class=ignoredRegion>');
+        img.css('top', ignoreLabel[0][1] + offset.top - annotationOffset);
+        img.css('left', ignoreLabel[0][0] + offset.left - annotationOffset);
+        img.width(wide);
+        img.height(high);
+        img.appendTo('#container');
+        var corner = [Math.min(ignoreLabel[0][0],ignoreLabel[1][0]), Math.min(ignoreLabel[0][1],ignoreLabel[1][1])];
+        var region = {point:corner,width:wide,height:high};
+        ignoredRegions.push(region);
+        ignoreLabel = [];
+        $('.ignoreRegionPoint').remove(); 
+      }
+      return;
+    }
 
     if(makeLine){
       img = $('<div class=badLinePoint>');
@@ -1046,7 +1130,7 @@ $(document).ready(function(e) {
           displayPath(path,'badLineL',false);
         }
         else if(pointType == RIGHT){
- 	        rightLines.push(currentLine);
+ 	  rightLines.push(currentLine);
           displayPath(path,'badLineR',false);
         }
         else if(pointType == BOTTOM){
@@ -1191,13 +1275,16 @@ $(document).ready(function(e) {
       changeType(RIGHT);
     }//e to mark an image as done
     else if(input == 101 || input == 69){
-      $('#markDone').attr('checked', true);
+      $('#markDone').trigger("click");
     }//r to make an image as bad
     else if(input == 114 || input == 82){
-      $('#markBad').attr('checked',true);
+      $('#markBad').trigger("click");
     }//t to mark notch submerged
     else if(input == 116 || input == 84){
-      $('#notchSubmerged').attr('checked',true);
+      $('#notchSubmerged').trigger("click");
+    }
+    else if(input == 70 || input == 102){
+      togglePath();
     }
   });
 

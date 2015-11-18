@@ -5,7 +5,7 @@ __pycache__/
 
 # Files specific to project
 annotation_info/
-changes.log 
+changes.log*
 dataset_loc
 
 #Ipython notebook Stuff

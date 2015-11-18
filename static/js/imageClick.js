@@ -470,8 +470,18 @@ function initailizeData(data){
   idList.appendTo('body');
 }
 
-function updateMainImage(){
-  $('.topControl').remove();
+function getNetworkResult(gid){
+  $.get( '/networkResult/'+gid, function( data ) {
+    $('#networkImage').attr("src", data.url);
+  });
+}
+
+function updateMainImage(gid){
+  var url = '/image';
+  if($('#findSimilar').is(':checked')){
+    console.log('HIT');
+    url = '/imageSimilar/'+gid;
+  }
   $.post( "/image", function( data ) {
     $('#mileMarker').remove();
     $('body').append('<h4 id=mileMarker>'+(data.totalImages - data.imagesLeft) + ' Images of ' + data.totalImages + ' completed');
@@ -485,6 +495,7 @@ function updateMainImage(){
     $('#mainImage').css('width',data.dim2);
     $('#mainImage').css('height', data.dim1);
     initailizeData(data);
+    getNetworkResult(data.id);
   });
 }
 
@@ -764,13 +775,14 @@ $(document).ready(function(e) {
       }
     }
     if(updated){
+      var gid = $('#mainImage').attr("alt");
       clearInfo();
       $('#markDone').attr('checked', false);
       $('#markBad').attr('checked',false);
       $('#notchSubmerged').attr('checked',false);
       $('#gradientInfo').remove();
       $('#makePath').attr('class', 'btn btn-danger');
-      updateMainImage();
+      updateMainImage(gid);
       imageLoadCheck = setInterval(showIsLoaded, 500);
     }
   }
@@ -1077,13 +1089,6 @@ $(document).ready(function(e) {
 
 
     if(labelIgnore){
-      /*
-ignoreLabel = [];
-    ignoredRegions = [];
-    labelIgnore = false;
-    $('.ignoreRegionPoint').remove();
-    $('.ignoredRegion').remove();
-      */
       if(ignoreLabel.length == 0){
         img = $('<div class=ignoreRegionPoint>');
         img.css('top', e.pageY-annotationOffset);
@@ -1250,6 +1255,7 @@ ignoreLabel = [];
     var input = e.which;
     //Spacebar for generate path
     if(input == 32) {
+      e.preventDefault();
       generatePath();
     }//z for undo point
     else if(input == 122 || input== 90){
@@ -1299,6 +1305,7 @@ ignoreLabel = [];
     if(checkout){
       returnImage();
       $('#mainImage').remove();
+      $('#networkImage').remove();
       clearInfo();
       $('.form-horizontal').remove();
       $('#container').append('<h2>Checked out</h2>');
@@ -1307,6 +1314,7 @@ ignoreLabel = [];
 
   $('#skipImg').click(function(e){
     e.preventDefault();
+    var gid = $('#mainImage').attr("alt");
     returnImage();
     clearInfo();
     $('#gradientInfo').remove();
@@ -1315,7 +1323,7 @@ ignoreLabel = [];
     $('#notchSubmerged').attr('checked',false);
     $('#makePath').attr('class', 'btn btn-danger');
     $('#skipImg').blur();
-    updateMainImage();
+    updateMainImage(gid);
     imageLoadCheck = setInterval(showIsLoaded, 500);
   });
 

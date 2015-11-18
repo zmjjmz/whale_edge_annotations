@@ -38,6 +38,8 @@ and find the euclidean distance between the bins
 def findDistance(img1, img2):
     img1Bins = np.asarray(img1['bins'])
     img2Bins = np.asarray(img2['bins'])
+    img1Bins = img1Bins/np.sum(img1Bins)
+    img2Bins = img2Bins/np.sum(img2bins)
     value =(img1Bins - img2Bins)**2
     return np.sum(np.sqrt(value))
 

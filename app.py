@@ -9,6 +9,8 @@ import pickle
 import os.path
 import json
 import glob
+from pymongo import MongoClient
+import operator
 
 def initialInit(ibs,gid_list):
     info = open('extracted_zsl_annotations_wsingle.pkl')
@@ -29,12 +31,46 @@ def initialInit(ibs,gid_list):
 	    tmp.write(values)
             tmp.close
 
+'''
+Function to take objects from network results db
+and find the euclidean distance between the bins
+'''
+def findDistance(img1, img2):
+    img1Bins = np.asarray(img1['bins'])
+    img2Bins = np.asarray(img2['bins'])
+    value =(img1Bins - img2Bins)**2
+    return np.sum(np.sqrt(value))
+
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/imageSimilar/<int:gid>',methods=['POST'])
+def get_similar_image(gid):
+    global images
+    if len(gid_list) == 0:
+        return jsonify(finallyDone=True)
+    imgObj = collection.find({'gid':gid}).next()
+    otherImages = cursor = collection.find({'gid':{'$ne':imgObj['gid'] } } )
+    entries = otherImages[:]
+    for value in entries:
+        results[value['gid'] ] = findDistance(imgObj, value)
+    sorted_results = sorted(results.items(), key=operator.itemgetter(1))
+    key = 0
+    while images[sorted_results[key][0]][1]:
+        key += 1
+    images[sorted_results[key][0]][1] = True
+    gid = collection.find({'gid':sorted_results[key][0]}).next()['gid']
+    fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
+    with open(fileName) as data_file:
+        jsonData = json.load(data_file)
+    src = return_src(ibs.get_image_paths(gid))
+    img = ibs.get_images(gid)
+    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
+    
 
 @app.route('/image',methods=['POST'])
 def get_next_image():
@@ -98,11 +134,22 @@ def getYGradient(gid):
     img2 = gradient_x_image.tolist()
     return jsonify(gradient=img,gradientX=img2,gid=gid)
 
+@app.route('/networkResult/<int:gid>',methods=['GET'])
+def getNetworkResult(gid):
+    imgObj = collection.find({'gid':gid}).next()
+    return jsonify(url=imgObj['png'])     
+
 if __name__ == '__main__':
+    #Initialize Ibies Database
     ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
     gid_list = ibs.get_valid_gids()
+
+    #Initialize Network Results collection
+    c = MongoClient()
+    db = c['annotationInfo']
+    collection = db['networkResults']
+ 
     totalImages = len(gid_list)
-    #initialInit(ibs,gid_list)
     images = {}
     files = glob.glob('annotation_info/*.JSON')
     for gid in gid_list:

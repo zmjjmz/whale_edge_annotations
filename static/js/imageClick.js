@@ -751,8 +751,8 @@ $(document).ready(function(e) {
       var notchSubmerged = $('#notchSubmerged').is(":checked");
       var submit = confirm("Are you sure you want to submit this?");
       if(submit){
-        if($('#pathtopInfo').length == 0) {
-          alert('Please Generate the Top Path First');
+        if($('#pathtopInfo').length == 0 || $('#pathleftInfo').length == 0 || $('#pathbottomInfo').length == 0 || $('#pathrightInfo').length == 0) {
+          alert('Please Generate all Paths before submitting');
         }
         else if(notch.length == 0 && !notchSubmerged){
           alert('Please Label the notch before submitting');

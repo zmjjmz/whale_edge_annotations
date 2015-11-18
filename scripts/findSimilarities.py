@@ -70,7 +70,7 @@ if __name__ == '__main__':
 	
 	ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
 	gid_list = ibs.get_valid_gids()
-
+	print 'Number of Previous images ' + str(len(usedGids))
         count = 0
 	for gid in gid_list:
 		if(gid in usedGids):

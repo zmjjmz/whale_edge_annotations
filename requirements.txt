@@ -2,3 +2,7 @@ flask
 numpy
 ibeis
 cv2
+pymongo
+theano
+lasagne
+scipy

@@ -6,24 +6,20 @@ import cPickle as pickle
 import numpy as np
 import time
 import lasagne.layers as ll
+import os
 from os.path import join
 import glob
-import random
 import cv2
-from io import BytesIO
-import base64
 from scipy.stats import entropy
-import matplotlib.pyplot as plt
 import ibeis
-import gc
-import string
 from pymongo import MongoClient
+from ibeis.web.appfuncs import return_src
 
 def runImage(gid,ibs,network_fn):	
 	imageLocations = "/home/zach/data/Flukes/CRC_combined constrained/"
 	name = imageLocations+ibs.get_image_gnames(gid)
 	img = cv2.imread(name)
-	img_normed = np.array((img - 128) / 255., dtype='float32').swapaxes(0,2)
+	img_normed = ((np.array(img, dtype='float32') - 128) / 255.).swapaxes(0,2)
 	img_normed = img_normed.reshape(1, *img_normed.shape)    
 	img_output = network_fn(img_normed)
 
@@ -32,21 +28,26 @@ def runImage(gid,ibs,network_fn):
 	background_mask = args == 2
 	whale_mask = args == 1
 	seam_mask = args == 0
-    
-	img_output[:,:][background_mask] = [0,0,1]
-	img_output[:,:][whale_mask] = [1,1,0]
-	img_output[:,:][seam_mask] = [1,0,1]
-    
-	plt.imshow(img_output)
-	figfile = BytesIO()
-	plt.savefig(figfile, format='png')
-	figfile.seek(0)  # rewind to beginning of file
-	figdata_png = 'data:image/png;base64,'+base64.b64encode(figfile.getvalue())
-  	n, bins, patches = plt.hist(args.flatten(),3)
-	args = n
-	return {'bins':n,'gid':gid,'png':figdata_png} 
+         
+        img_output[:,:][background_mask] = [255,0,0]
+        img_output[:,:][whale_mask] = [0,255,255]
+        img_output[:,:][seam_mask] = [255,0,255]
+
+        entrpy = entropy(img_output.swapaxes(0,2))
+        entrpy = np.average(entrpy)
+        
+        bins = []
+        bins.append(np.sum(background_mask))
+        bins.append(np.sum(whale_mask))
+        bins.append(np.sum(seam_mask))   
+   
+        cv2.imwrite('tmp.png',img_output)
+        src = return_src('tmp.png')
+	return {'bins':n,'gid':gid,'png':src,'version':nextVersion,'entropy':entrpy} 
 
 if __name__ == '__main__':
+        nextVersion = 2
+        #TODO make commandline argument for model location
 	with open(join(dataset_loc, "Flukes/patches/annot_path_32/model.pkl"), 'r') as f:
 		model = pickle.load(f)
 	test_dset = load_dataset(join(dataset_loc, "Flukes/patches/TESTannot_path_32"))	
@@ -59,11 +60,13 @@ if __name__ == '__main__':
 	dset_for_model = {section:preproc_dataset(test_dset[section]) for section in test_dset}
 	segmentation_outputs = segmenter_fn(dset_for_model['train']['X'])
 	segmentation_outputs_valid = segmenter_fn(dset_for_model['valid']['X'])
+
 	usedGids = []
+        #open MongoDB
 	c = MongoClient()
 	db = c['annotationInfo']
 	collection = db['networkResults']
-	cursor = collection.find({})
+	cursor = collection.find({'version':nextVersion})
 	values = cursor[:]
 	for value in values:
 		usedGids.append(value['gid'])
@@ -78,6 +81,5 @@ if __name__ == '__main__':
 		count += 1
 		print count
 		value = runImage(gid,ibs,segmenter_fn)
-		value['bins'] = value['bins'].tolist()
-		collection.insert(value)
-	
+		collection.update_one({'gid':value['gid']},{'$set':value},upsert=True)
+	os.remove('tmp.png')

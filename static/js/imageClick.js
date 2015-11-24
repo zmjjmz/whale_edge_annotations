@@ -473,6 +473,8 @@ function initailizeData(data){
 function getNetworkResult(gid){
   $.get( '/networkResult/'+gid, function( data ) {
     $('#networkImage').attr("src", data.url);
+    $('#networkImage').css('width',$('#mainImage').width());
+    $('#networkImage').css('height', $('#mainImage').height()); 
   });
 }
 

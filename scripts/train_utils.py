@@ -93,8 +93,6 @@ def desparsify(data):
 
 
 def load_dataset(dataset_path):
-    print("Loading %s" % dataset_path)
-    tic = time.time()
     dset = {}
     with open(join(dataset_path, 'train.pkl'),'r') as f:
         dset['train'] = pickle.load(f)
@@ -102,8 +100,6 @@ def load_dataset(dataset_path):
         dset['valid'] = pickle.load(f)
     with open(join(dataset_path, 'test.pkl'),'r') as f:
         dset['test'] = pickle.load(f)
-    toc = time.time() - tic
-    print("Took %0.2f seconds" % toc)
     return dset
 
 def save_dataset(dataset_path, train, val, test):

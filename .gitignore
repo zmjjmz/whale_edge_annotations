@@ -7,6 +7,7 @@ __pycache__/
 annotation_info/
 changes.log*
 dataset_loc
+scripts/networkVersion.txt
 
 #Ipython notebook Stuff
 *.ipynb

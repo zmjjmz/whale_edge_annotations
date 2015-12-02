@@ -143,7 +143,7 @@ def getNetworkResult(gid):
 
 if __name__ == '__main__':
     #Initialize Ibies Database
-    ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
+    ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks',allow_newdir=False)
     gid_list = ibs.get_valid_gids()
 
     #Initialize Network Results collection

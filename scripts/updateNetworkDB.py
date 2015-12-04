@@ -89,7 +89,7 @@ def runImage(gid,ibs,network_fn):
         gradientImg[:,:][whale_mask] = 0
         gradientImg[:,:][seam_mask] = 255
         gradientImg = gradientImg.astype(np.uint8)
-        gradientvalue = float(np.absolute(np.average(cv2.Laplacian(gradientImg,cv2.CV_64F))))
+        gradientvalue = float(np.average(np.absolute(cv2.Laplacian(gradientImg,cv2.CV_64F))))
 	
         entrpy = entropy(img_output.swapaxes(0,2))
         entrpy = np.average(entrpy)
@@ -108,7 +108,7 @@ def getVersion():
 	f = open('networkVersion.txt', 'r')
         val = f.read()
         f.close()
-        return int(val)
+        return float(val)
     
 def updateVersion(nextVersion):
     	f = open('networkVersion.txt', 'w')
@@ -124,7 +124,7 @@ if __name__ == '__main__':
 	segmenter = build_segmenter_vgg()
 	ll.set_all_param_values(segmenter, model)
 	X = T.tensor4()
-	segmenter_out = ll.get_output(segmenter, X)
+	segmenter_out = ll.get_output(segmenter, X, deterministic=True)
 	segmenter_fn = tfn([X], segmenter_out)
 	dset_for_model = {section:preproc_dataset(test_dset[section]) for section in ['train', 'valid', 'test']}
 	segmentation_outputs = segmenter_fn(dset_for_model['train']['X'])
@@ -153,4 +153,4 @@ if __name__ == '__main__':
 		value = runImage(gid,ibs,segmenter_fn)
 		collection.update_one({'gid':gid},{'$set':value},upsert=True)
 	os.remove('tmp.png')
-	updateVersion(nextVersion+1)
+	updateVersion(nextVersion+1.0)

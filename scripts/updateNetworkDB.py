@@ -116,7 +116,6 @@ def updateVersion(nextVersion):
     	f.close()  
 
 if __name__ == '__main__':
-	#TODO make file that contains current version number
         nextVersion = getVersion()
 	with open(join(dataset_loc, "Flukes/patches/annot_full_64_100r_zs/vgg16_c43_10ep_adam_l21e-3.pkl"), 'r') as f:
 		model = pickle.load(f)
@@ -129,7 +128,7 @@ if __name__ == '__main__':
 	dset_for_model = {section:preproc_dataset(test_dset[section]) for section in ['train', 'valid', 'test']}
 	segmentation_outputs = segmenter_fn(dset_for_model['train']['X'])
 	segmentation_outputs_valid = segmenter_fn(dset_for_model['valid']['X'])
-	usedGids = []
+	usedGids = set()
 
         #open MongoDB
 	c = MongoClient()
@@ -138,7 +137,7 @@ if __name__ == '__main__':
 	cursor = collection.find({'version':nextVersion})
 	values = cursor[:]
 	for value in values:
-		usedGids.append(value['gid'])
+		usedGids.add(value['gid'])
 	
 	ibs = ibeis.opendb(dbdir='/home/zach/data/IBEIS/humpbacks')
 	gid_list = ibs.get_valid_gids()

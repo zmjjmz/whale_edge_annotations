@@ -726,8 +726,7 @@ $(document).ready(function(e) {
     $('.leftControl').remove();
     $('.rightControl').remove();
     $('.bottomControl').remove();
-    $('#optionsRadios2').prop('checked',false);
-    $('#optionsRadios1').prop('checked',true);
+    $('#optionsRadios1').trigger('click');
     $('#typeLeft').prop('checked', false);
     $('#typeRight').prop('checked', false);
     $('#typeBottom').prop('checked', false);

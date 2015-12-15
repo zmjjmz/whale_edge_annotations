@@ -12,6 +12,9 @@ import glob
 from pymongo import MongoClient
 import operator
 
+'''
+Function to initialize Data if missing in data set
+'''
 def initialInit(ibs,gid_list):
     info = open('extracted_zsl_annotations_wsingle.pkl')
     f = pickle.load(info)
@@ -43,19 +46,28 @@ def get_similar_image(gid):
     global images
     if len(gid_list) == 0:
         return jsonify(finallyDone=True)
-    key = 1
     index = None
-    for i in range(DBcount):
-    	if cursor[i]['gid'] == gid:
-        	index = i
-        	break
-    while images[cursor[min(index+key,DBcount-1)]][1] and images[cursor[max(index-key,0)]][1]:
-	key += 1
-    nextGid = None
-    if not images[cursor[min(index+key,DBcount-1)]][1]:
-    	nextGid = cursor[min(index+key,DBcount-1)]
-    else:
-	nextGid = cursor[max(index-key,0)]
+    length = len(listCursor)
+    #Loop to find location of given gid in sorted list
+    for i in range(length):
+        if listCursor[i]['gid'] == gid:
+            index = i
+            break
+    closeImages = []
+    key = 1
+    while len(closeImages) < 10:
+        #Looping till an unlabeled image found
+        option1 = listCursor[min(index+key,length-1)]
+        option2 = listCursor[max(index-key,0)]
+        if option1['gid'] in gid_list and not images[option1['gid']][1] and min(index+key,length-1) not in closeImages:
+            closeImages.append(min(index+key,length-1))
+        if option2['gid'] in gid_list and not images[option2['gid']][1] and max(index-key,0) not in closeImages:
+            closeImages.append(max(index-key,0) )
+        key += 1
+
+    entropyDistance = [(listCursor[x]['entropy']-listCursor[index]['entropy'])**2 for x in closeImages]
+    closest = np.argmin(entropyDistance)
+    nextGid = listCursor[closeImages[closest]]['gid']
     images[nextGid][1] = True
     fileName = 'annotation_info/' + ibs.get_image_gnames(nextGid) + '.JSON'
     with open(fileName) as data_file:
@@ -76,6 +88,7 @@ def get_next_image():
 	if index == len(gid_list):
 	    index = 0
     gid = gid_list[index]
+    #Opening stored data from JSON file
     fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
     with open(fileName) as data_file:
     	jsonData = json.load(data_file)
@@ -85,6 +98,7 @@ def get_next_image():
     index += 1
     if index == len(gid_list):
 	index == 0
+    #sending information to client
     return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
 
 @app.route('/path',methods=['POST'])
@@ -114,7 +128,8 @@ def checkout():
     global images
     jsonData = request.get_json()
     gid = int(jsonData['gid'])
-    images[gid] = False
+    images.pop(gid,None)
+    gid_list.remove(gid)
     return "Checked out"
 
 @app.route('/gradient/<int:gid>',methods=['GET'])
@@ -141,16 +156,19 @@ if __name__ == '__main__':
     c = MongoClient()
     db = c['annotationInfo']
     collection = db['networkResults']
-    sorted_cursor = collection.find({ '$query': {},'$orderby': { 'entropy' : 1}},{'gid':1})
-    test = collection.find({})
-    DBcount = test.count() 
+    sorted_cursor = collection.find({ '$query': {},'$orderby': { 'gradient' : -1}},{'gid':1,'entropy':1,'_id':-1})
+    listCursor = list(sorted_cursor)
+
     totalImages = len(gid_list)
     images = {}
     files = glob.glob('annotation_info/*.JSON')
+    #Finding item that are marked bad and not labled makred bad
     for gid in gid_list:
+        fileName = None
         name = ibs.get_image_gnames(gid)[:ibs.get_image_gnames(gid).index('.')]
         for item in files:
 	    if(item[item.index('/')+1:item.index('.')] == name):
+                fileName = item
 		with open(item) as data_file:
                 	data = json.load(data_file)
         badImage = False
@@ -158,10 +176,9 @@ if __name__ == '__main__':
                 if 'bad' in keys:
                         badImage = data[1]['bad']
 	if not data[1]['done'] and not badImage:
-                images[gid] = [item,False]
+                images[gid] = [fileName,False]
     gid_list = images.keys()
     shuffle(gid_list)
     index = 0
-
 
     app.run(host='0.0.0.0')

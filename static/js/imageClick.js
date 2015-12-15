@@ -175,6 +175,9 @@ function getLinearPath(points){
   return path;
 }
 
+/**
+*function to force path to go through a point on horizontal path
+*/
 function setPassThrough(gradient, pt){
   for(var i = 0; i < gradient.length; i++){
     gradient[i][pt[0]] = Number.NEGATIVE_INFINITY;
@@ -183,6 +186,9 @@ function setPassThrough(gradient, pt){
   return gradient;
 }
 
+/**
+*function to force path to go through a point on vertical path
+*/
 function setPassThroughVertical(gradient,pt){
   for(var i = 0; i < gradient[0].length; i++){
     gradient[pt[1]][i] = Number.NEGATIVE_INFINITY;
@@ -191,6 +197,10 @@ function setPassThroughVertical(gradient,pt){
   return gradient;
 }
 
+/**
+*Function to force path to avoid a specific region
+*Takes the gradient array and region object to map out region to ignore
+*/
 function setIgnoredArea(gradient, region){
   var point = region.point;
   for(var i = 0; i < region.height; i++){
@@ -200,7 +210,9 @@ function setIgnoredArea(gradient, region){
   }
   return gradient;
 }
-
+/**
+*Function to make interior bound to avoid specific part of image based on path type
+*/
 function lineAdjustment(gradient,path,type){
   if(type == TOP){
     for(var i = 0; i < path.length; i++){
@@ -238,6 +250,9 @@ function lineAdjustment(gradient,path,type){
   return gradient;
 }
 
+/**
+*Fucntion to get cost from a specific pixel of nearby costs for vertical tests
+*/
 function getCost(row, col, i, gradient_y_image, cost,side){
   var multiplier = 1.0;
   if(side == BOTTOM){
@@ -255,6 +270,9 @@ function getCost(row, col, i, gradient_y_image, cost,side){
   }
 }
 
+/**
+*Fucntion to get cost from a specific pixel of nearby costs for horizontal paths
+*/
 function getCostVertical(row, col, i, gradient, cost,side){
   var multiplier = 1.0;
   if(side == LEFT){
@@ -272,6 +290,9 @@ function getCostVertical(row, col, i, gradient, cost,side){
   }
 }
 
+/**
+*Function to find costs of canditates of next pixel for seam carving
+*/
 function getCandidates(row, col, gradient_y_image, cost, neighbor_range,orientation,side){
 var candidates = [];
   for(var i = 0; i < neighbor_range.length; i++){
@@ -285,6 +306,9 @@ var candidates = [];
   return candidates;
 }
 
+/**
+* Function to find the index of the maximum entry in 1d array
+*/
 function argMax(candidates){
   var maxVal = candidates[0];
   var maxIndex = 0;
@@ -297,6 +321,10 @@ function argMax(candidates){
   return maxIndex;
 }
 
+/**
+*Vertical seam carving method
+*Draws and stores the seam carved path
+*/
 function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side,ignoredRegions){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
@@ -351,6 +379,10 @@ function find_seam_vertical(gradient,linePoints,lines,n_neighbors,side,ignoredRe
   info.appendTo('body');
 }
 
+/**
+*Horizontal seam carving method
+*Draws and stores the seam carved path
+*/
 function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side,ignoredRegions){
   if(n_neighbors % 2 != 1){
     alert("n_neighbors is not an odd number");
@@ -403,7 +435,9 @@ function find_seam_horizontal(yGradient,linePoints,lines ,n_neighbors,side,ignor
   info.text(pathData);
   info.appendTo('body');
 }
-
+/**
+*Function to grab the gradient that is stored on the page
+*/
 function getGradient(gid){
   $.get('/gradient/'+gid, function( data ) {
     $('#gradientInfo').remove();
@@ -415,7 +449,9 @@ function getGradient(gid){
     }
   });
 }
-
+/**
+*Function to take existing data from previous labeling, draw it and store it on the page
+*/
 function initailizeData(data){
   data = data.data[1];
   var counter = 0;
@@ -469,7 +505,9 @@ function initailizeData(data){
   idList.text(JSON.stringify(id2List));
   idList.appendTo('body');
 }
-
+/**
+*Function to request network result image from server
+*/
 function getNetworkResult(gid){
   $.get( '/networkResult/'+gid, function( data ) {
     $('#networkImage').attr("src", data.url);
@@ -478,13 +516,16 @@ function getNetworkResult(gid){
   });
 }
 
+/**
+*Function to update the image that the user is labeling
+*/
 function updateMainImage(gid){
   var url = '/image';
+  //If find similar is checked then send different request
   if($('#findSimilar').is(':checked')){
-    console.log('HIT');
     url = '/imageSimilar/'+gid;
   }
-  $.post( "/image", function( data ) {
+  $.post( url, function( data ) {
     $('#mileMarker').remove();
     $('body').append('<h4 id=mileMarker>'+(data.totalImages - data.imagesLeft) + ' Images of ' + data.totalImages + ' completed');
     if(data.FinallyDone){
@@ -501,6 +542,9 @@ function updateMainImage(gid){
   });
 }
 
+/**
+*Returns the user specified number of neighbors on the GUI
+*/
 function getNumberOfNeighbors(){
   var n_neighbors = $('#inputNeighbors').val();
   return parseInt(n_neighbors);
@@ -653,7 +697,7 @@ $(document).ready(function(e) {
       });
     }
     else{
-      alert('Need at least 2 points labeled to mark notch!');
+      alert('Need at least 3 top points labeled to mark notch!');
       return;
     }
   }

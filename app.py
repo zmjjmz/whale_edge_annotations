@@ -31,18 +31,6 @@ def initialInit(ibs,gid_list):
 	    tmp.write(values)
             tmp.close
 
-'''
-Function to take objects from network results db
-and find the euclidean distance between the bins
-'''
-def findDistance(img1, img2):
-    img1Bins = np.asarray(img1['bins'])
-    img2Bins = np.asarray(img2['bins'])
-    img1Bins = img1Bins / np.sum(img1Bins)
-    img2Bins = img2Bins / np.sum(img2Bins)
-    value =(img1Bins - img2Bins)**2
-    return np.sum(np.sqrt(value))
-
 
 app = Flask(__name__)
 
@@ -55,23 +43,26 @@ def get_similar_image(gid):
     global images
     if len(gid_list) == 0:
         return jsonify(finallyDone=True)
-    imgObj = collection.find({'gid':gid}).next()
-    otherImages = cursor = collection.find({'gid':{'$ne':imgObj['gid'] } } )
-    entries = otherImages[:]
-    for value in entries:
-        results[value['gid'] ] = findDistance(imgObj, value)
-    sorted_results = sorted(results.items(), key=operator.itemgetter(1))
-    key = 0
-    while images[sorted_results[key][0]][1]:
-        key += 1
-    images[sorted_results[key][0]][1] = True
-    gid = collection.find({'gid':sorted_results[key][0]}).next()['gid']
-    fileName = 'annotation_info/' + ibs.get_image_gnames(gid) + '.JSON'
+    key = 1
+    index = None
+    for i in range(DBcount):
+    	if cursor[i]['gid'] == gid:
+        	index = i
+        	break
+    while images[cursor[min(index+key,DBcount-1)]][1] and images[cursor[max(index-key,0)]][1]:
+	key += 1
+    nextGid = None
+    if not images[cursor[min(index+key,DBcount-1)]][1]:
+    	nextGid = cursor[min(index+key,DBcount-1)]
+    else:
+	nextGid = cursor[max(index-key,0)]
+    images[nextGid][1] = True
+    fileName = 'annotation_info/' + ibs.get_image_gnames(nextGid) + '.JSON'
     with open(fileName) as data_file:
         jsonData = json.load(data_file)
-    src = return_src(ibs.get_image_paths(gid))
-    img = ibs.get_images(gid)
-    return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
+    src = return_src(ibs.get_image_paths(nextGid))
+    img = ibs.get_images(nextGid)
+    return jsonify(image=src,id=nextGid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
     
 
 @app.route('/image',methods=['POST'])
@@ -150,7 +141,9 @@ if __name__ == '__main__':
     c = MongoClient()
     db = c['annotationInfo']
     collection = db['networkResults']
- 
+    sorted_cursor = collection.find({ '$query': {},'$orderby': { 'entropy' : 1}},{'gid':1})
+    test = collection.find({})
+    DBcount = test.count() 
     totalImages = len(gid_list)
     images = {}
     files = glob.glob('annotation_info/*.JSON')

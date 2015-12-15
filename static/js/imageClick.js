@@ -786,6 +786,7 @@ $(document).ready(function(e) {
       updateMainImage(gid);
       imageLoadCheck = setInterval(showIsLoaded, 500);
     }
+    $('#manualSubmit').blur();
   }
 
   function generatePath(){

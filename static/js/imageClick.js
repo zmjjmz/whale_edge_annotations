@@ -272,7 +272,9 @@ $(document).ready(function(e) {
       bottomNeighbors = currentNeighborVal;
     }
   }
-
+  /*
+  Function to change mode manually
+  */
   function changeType(label){
     storeNeighbor();
     pointType = label;
@@ -305,7 +307,9 @@ $(document).ready(function(e) {
       $('#inputNeighbors').val(rightNeighbors.toString());
     }
   }
-
+  /*
+  Function to read data stored on page
+  */
   function initInfo(){
     if($('#initInfo').length != 0) {
       linePoints = JSON.parse($('#initInfo').text());
@@ -315,7 +319,10 @@ $(document).ready(function(e) {
       $('#idList').remove();
     }
   }
-
+  
+  /*
+  Function to color notch keypoint and store variable
+  */
   function markNotch(){
     initInfo();
     if($('#notch').length != 0){
@@ -421,6 +428,9 @@ $(document).ready(function(e) {
     $('#notchSubmerged').attr('checked',false);
   }
 
+  /*
+  Function to send generated information to the server
+  */
   function sendInformation(){
     if(testing){
       alert('This feature is undergoing testing please try again after an update');
@@ -474,6 +484,9 @@ $(document).ready(function(e) {
     $('#manualSubmit').blur();
   }
 
+  /*
+  Function to generate path based on current settings
+  */
   function generatePath(){
     initInfo();
 
@@ -614,7 +627,9 @@ $(document).ready(function(e) {
         alert("Please Label start and end points before submitting");
       }
   }
-
+  /*
+   Function to return image if it will not be annotated
+  */
   function returnImage(){
     values = {gid:$('#mainImage').attr("alt")};
     $.ajax({
@@ -765,7 +780,10 @@ $(document).ready(function(e) {
     e.preventDefault();
     labelIgnore = true;
   });
-
+  /*
+    Handler to place markings on image based on the given mode. 
+    This will include marking key points, labeling bad regions and ignore regions
+  */
   $('.displayed').click(function(e) {
     var offset = $('.displayed').offset();
     initInfo();
@@ -937,6 +955,7 @@ $(document).ready(function(e) {
     img.css('left',e.pageX-annotationOffset);
     img.appendTo('#container');
   });
+
   //Handler for keybindings
   $(document).keypress(function(e) {
     var input = e.which;
@@ -1018,8 +1037,10 @@ $(document).ready(function(e) {
     e.preventDefault();
     sendInformation();
   });
+
   //To warn user that they are leaving page so they sign out
   $(window).bind('beforeunload',function(){
     return 'are you sure you want to leave?';
   });
+
 });

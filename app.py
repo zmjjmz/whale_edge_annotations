@@ -41,6 +41,9 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
+'''
+Endpoint to find similar images
+'''
 @app.route('/imageSimilar/<int:gid>',methods=['POST'])
 def get_similar_image(gid):
     global images
@@ -69,6 +72,7 @@ def get_similar_image(gid):
     closest = np.argmin(entropyDistance)
     nextGid = listCursor[closeImages[closest]]['gid']
     images[nextGid][1] = True
+    #Opening next file to read info from
     fileName = 'annotation_info/' + ibs.get_image_gnames(nextGid) + '.JSON'
     with open(fileName) as data_file:
         jsonData = json.load(data_file)
@@ -76,7 +80,9 @@ def get_similar_image(gid):
     img = ibs.get_images(nextGid)
     return jsonify(image=src,id=nextGid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
     
-
+'''
+End point to send image data to user
+'''
 @app.route('/image',methods=['POST'])
 def get_next_image():
     global index
@@ -101,6 +107,9 @@ def get_next_image():
     #sending information to client
     return jsonify(image=src,id=gid,dim1=img.shape[0],dim2=img.shape[1],FinallyDone=False,data=jsonData,totalImages=totalImages,imagesLeft=len(gid_list))
 
+'''
+Endpoint to store annotations in JSON file
+'''
 @app.route('/path',methods=['POST'])
 def storePath():
     global images
@@ -123,6 +132,9 @@ def storePath():
 
     return "Submitted"
 
+'''
+Endpoint to return image
+'''
 @app.route('/checkout',methods=['POST'])
 def checkout():
     global images
@@ -132,6 +144,9 @@ def checkout():
     gid_list.remove(gid)
     return "Checked out"
 
+'''
+Endpoint to reterive gradient given gid of image
+'''
 @app.route('/gradient/<int:gid>',methods=['GET'])
 def getYGradient(gid):
     img = ibs.get_images(gid)
@@ -142,6 +157,9 @@ def getYGradient(gid):
     img2 = gradient_x_image.tolist()
     return jsonify(gradient=img,gradientX=img2,gid=gid)
 
+'''
+Endpoint to retreive network result of image
+'''
 @app.route('/networkResult/<int:gid>',methods=['GET'])
 def getNetworkResult(gid):
     imgObj = collection.find({'gid':gid}).next()
